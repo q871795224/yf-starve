@@ -17,8 +17,8 @@ stock animation and grunt sound. It has no fear or combat effect and does not ad
 bypasses the vanilla `heardhorn` event used by horn behavior. Verify the pose and sound in-game and across clients.
 
 Temporary animation probes are available in the development build. F10 cycles through these probes: direct
-`bellow` state, vanilla `heardhorn` event, `shake`, `matingcall`, `graze`, client-local `bellow` clip,
-client-local `mating_taunt1` clip, and the head-raised `actual_alert` state. Server probes target the ridden
+`bellow` state, client-local `bellow` clip, vanilla `heardhorn` event, client-local `mating_taunt1` clip,
+`shake`, `matingcall`, `graze`, and the head-raised `actual_alert` state. Server probes target the ridden
 beefalo or the nearest adult beefalo within 8 units. Use F10 while mounted and while standing beside a beefalo
 to compare the animation paths. The client-local probes do not change server state. These diagnostics can
 interrupt the beefalo's current action.

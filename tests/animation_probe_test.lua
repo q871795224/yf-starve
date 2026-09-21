@@ -11,7 +11,15 @@ local active_screen
 local chat_open = false
 local console_open = false
 local pushed_event
-local local_animation
+local current_animation
+
+local state_animations = {
+    bellow = "bellow",
+    shake = "shake",
+    matingcall = "mating_taunt1",
+    graze = "graze_loop",
+    actual_alert = "alert_pre",
+}
 
 local hud = {}
 function hud:IsChatInputScreenOpen()
@@ -27,7 +35,10 @@ local beefalo = {
     Transform = { GetWorldPosition = function() return 2, 0, 0 end },
     AnimState = {
         PlayAnimation = function(_, animation)
-            local_animation = animation
+            current_animation = animation
+        end,
+        IsCurrentAnimation = function(_, animation)
+            return current_animation == animation
         end,
     },
     sg = { currentstate = { name = "idle" } },
@@ -38,6 +49,10 @@ end
 function beefalo.sg:GoToState(state)
     go_to_state_calls[#go_to_state_calls + 1] = state
     self.currentstate = { name = state }
+    current_animation = state_animations[state]
+end
+function beefalo:DoTaskInTime(_, callback)
+    callback(self)
 end
 function beefalo:PushEvent(event, data)
     pushed_event = { event = event, data = data }
@@ -66,6 +81,9 @@ local player = {
 }
 function player:IsValid()
     return true
+end
+function player:DoTaskInTime(_, callback)
+    callback()
 end
 
 active_screen = hud
@@ -105,26 +123,27 @@ key_handler()
 assert(go_to_state_calls[#go_to_state_calls] == "bellow", "first F10 probe did not enter bellow directly")
 
 key_handler()
-assert(pushed_event.event == "heardhorn", "second F10 probe did not send heardhorn")
+assert(current_animation == "bellow", "second F10 probe did not play local bellow")
+
+local rpcs_before_local_probes = sent_rpcs
+key_handler()
+assert(pushed_event.event == "heardhorn", "third F10 probe did not send heardhorn")
 assert(pushed_event.data.musician == player, "heardhorn event did not include the player")
 assert(go_to_state_calls[#go_to_state_calls] == "bellow", "heardhorn event did not enter bellow")
 
 key_handler()
-assert(go_to_state_calls[#go_to_state_calls] == "shake", "third F10 probe did not enter shake")
+assert(current_animation == "mating_taunt1", "fourth F10 probe did not play local mating taunt")
+assert(sent_rpcs == rpcs_before_local_probes + 1, "client-local probes sent server RPCs")
+
 key_handler()
-assert(go_to_state_calls[#go_to_state_calls] == "matingcall", "fourth F10 probe did not enter matingcall")
+assert(go_to_state_calls[#go_to_state_calls] == "shake", "fifth F10 probe did not enter shake")
+key_handler()
+assert(go_to_state_calls[#go_to_state_calls] == "matingcall", "sixth F10 probe did not enter matingcall")
 
 mounted = false
 nearby = { beefalo }
 key_handler()
-assert(go_to_state_calls[#go_to_state_calls] == "graze", "fifth F10 probe did not target a nearby beefalo")
-
-local rpcs_before_local_probes = sent_rpcs
-key_handler()
-assert(local_animation == "bellow", "sixth F10 probe did not play local bellow")
-key_handler()
-assert(local_animation == "mating_taunt1", "seventh F10 probe did not play local mating taunt")
-assert(sent_rpcs == rpcs_before_local_probes, "client-local probes sent server RPCs")
+assert(go_to_state_calls[#go_to_state_calls] == "graze", "seventh F10 probe did not target a nearby beefalo")
 
 key_handler()
 assert(go_to_state_calls[#go_to_state_calls] == "actual_alert", "eighth F10 probe did not enter actual_alert")
