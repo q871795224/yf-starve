@@ -1,0 +1,11 @@
+# Downloaded reference mods and local tooling (not part of this project)
+/temp/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Local logs
+*.log
