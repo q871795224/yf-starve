@@ -37,11 +37,6 @@ local function OnBattleCryRequest(player)
         return
     end
 
-    if beefalo.sg.states.bellow == nil then
-        print("[yf-starve] battle_cry rejected: vanilla bellow state is unavailable")
-        return
-    end
-
     beefalo.sg:GoToState("bellow")
     print("[yf-starve] battle_cry accepted: entered vanilla bellow state")
 end
