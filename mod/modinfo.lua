@@ -28,4 +28,32 @@ configuration_options =
         default = 104,
         client = true,
     },
+    {
+        name = "charge_key",
+        label = "蓄力冲撞按键",
+        hover = "骑乘牛时发动直线蓄力冲撞。",
+        options =
+        {
+            { description = "J", data = 106 },
+            { description = "K", data = 107 },
+            { description = "N", data = 110 },
+            { description = "关闭", data = -1 },
+        },
+        default = 106,
+        client = true,
+    },
+    {
+        name = "tilling_key",
+        label = "牛牛犁地按键",
+        hover = "骑乘牛时启动或停止沿途耕地。",
+        options =
+        {
+            { description = "L", data = 108 },
+            { description = "U", data = 117 },
+            { description = "I", data = 105 },
+            { description = "关闭", data = -1 },
+        },
+        default = 108,
+        client = true,
+    },
 }
