@@ -56,7 +56,7 @@ local function GetFarmGridPoint(inst)
     local point_x = center_x + slot_x * FARM_SOIL_SPACING
     local point_z = center_z + slot_z * FARM_SOIL_SPACING
 
-    return Vector3(point_x, 0, point_z), string.format("%.3f:%.3f", point_x, point_z)
+    return GLOBAL.Vector3(point_x, 0, point_z), string.format("%.3f:%.3f", point_x, point_z)
 end
 
 local function PlayTillingWalk(beefalo)

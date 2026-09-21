@@ -177,6 +177,7 @@ local function ExitChargeState(inst)
 end
 
 local function BeginDash(inst)
+    print("[yf-starve] mounted_charge transition: windup -> dash")
     inst.sg:GoToState(CHARGE_DASH_STATE)
 end
 
@@ -196,6 +197,7 @@ AddStategraphPostInit("beefalo", function(sg)
 
             inst.AnimState:PlayAnimation("atk_pre")
             inst.sg:SetTimeout(math.max(inst.AnimState:GetCurrentAnimationLength(), 0.1))
+            print("[yf-starve] mounted_charge state entered: windup (atk_pre)")
         end,
 
         onupdate = function(inst)
@@ -237,6 +239,7 @@ AddStategraphPostInit("beefalo", function(sg)
             inst.AnimState:PlayAnimation("run_pre")
             inst.AnimState:PushAnimation("run_loop", true)
             inst.sg:SetTimeout(CHARGE_DURATION)
+            print("[yf-starve] mounted_charge state entered: dash (run_pre/run_loop)")
         end,
 
         onupdate = function(inst)
@@ -255,17 +258,20 @@ AddStategraphPostInit("beefalo", function(sg)
 
             local target = FindChargeTarget(inst)
             if target ~= nil then
+                print("[yf-starve] mounted_charge dash found target")
                 inst.components.combat:DoAttack(target)
                 inst.sg:GoToState(CHARGE_HIT_STATE)
                 return
             end
 
             if IsChargeStalled(inst) then
+                print("[yf-starve] mounted_charge dash stalled; entering recovery")
                 inst.sg:GoToState(CHARGE_RECOVERY_STATE)
             end
         end,
 
         ontimeout = function(inst)
+            print("[yf-starve] mounted_charge dash timeout; entering recovery")
             inst.sg:GoToState(CHARGE_RECOVERY_STATE)
         end,
 
@@ -285,14 +291,17 @@ AddStategraphPostInit("beefalo", function(sg)
 
                 inst.AnimState:PlayAnimation(animation)
                 inst.sg:SetTimeout(math.max(inst.AnimState:GetCurrentAnimationLength(), 0.1))
+                print("[yf-starve] mounted_charge state entered:", name, animation)
             end,
 
             ontimeout = function(inst)
+                print("[yf-starve] mounted_charge recovery timeout:", name)
                 inst.sg:GoToState("idle")
             end,
 
             events = {
                 GLOBAL.EventHandler("animover", function(inst)
+                    print("[yf-starve] mounted_charge recovery animation ended:", name)
                     inst.sg:GoToState("idle")
                 end),
             },
