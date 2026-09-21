@@ -288,27 +288,49 @@ local function OnChargeRequest(player)
     print("[yf-starve] RPC received: mounted_charge")
 
     if player == nil or not player:IsValid() then
+        print("[yf-starve] mounted_charge rejected: invalid player")
         return
     end
 
     local rider = player.components.rider
-    if rider == nil or not rider:IsRiding() or player.sg == nil or player.sg:HasStateTag("busy") then
+    if rider == nil or not rider:IsRiding() then
+        print("[yf-starve] mounted_charge rejected: player is not riding")
+        return
+    end
+
+    if player.sg == nil or player.sg:HasStateTag("busy") then
+        print("[yf-starve] mounted_charge rejected: player is busy")
         return
     end
 
     local beefalo = rider:GetMount()
     if beefalo == nil or not beefalo:IsValid() or beefalo.prefab ~= "beefalo" then
+        print("[yf-starve] mounted_charge rejected: mount is not a valid beefalo")
         return
     end
 
-    if beefalo.sg == nil
-        or beefalo.sg:HasStateTag("busy")
-        or beefalo.sg:HasStateTag("attack")
-        or beefalo._yf_beefalo_charge_cooldown then
+    if beefalo.sg == nil then
+        print("[yf-starve] mounted_charge rejected: beefalo has no stategraph")
+        return
+    end
+
+    if beefalo.sg:HasStateTag("busy") then
+        print("[yf-starve] mounted_charge rejected: beefalo is busy")
+        return
+    end
+
+    if beefalo.sg:HasStateTag("attack") then
+        print("[yf-starve] mounted_charge rejected: beefalo is attacking")
+        return
+    end
+
+    if beefalo._yf_beefalo_charge_cooldown then
+        print("[yf-starve] mounted_charge rejected: cooldown is active")
         return
     end
 
     StartCooldown(beefalo)
+    print("[yf-starve] mounted_charge accepted: entering windup")
     beefalo.sg:GoToState(CHARGE_WINDUP_STATE)
 end
 

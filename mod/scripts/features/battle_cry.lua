@@ -5,25 +5,38 @@ local function OnBattleCryRequest(player)
     print("[yf-starve] RPC received: battle_cry")
 
     if player == nil or not player:IsValid() then
+        print("[yf-starve] battle_cry rejected: invalid player")
         return
     end
 
     local rider = player.components.rider
     if rider == nil or not rider:IsRiding() then
+        print("[yf-starve] battle_cry rejected: player is not riding")
         return
     end
 
     local beefalo = rider:GetMount()
     if beefalo == nil or not beefalo:IsValid() or beefalo.prefab ~= "beefalo" then
+        print("[yf-starve] battle_cry rejected: mount is not a valid beefalo")
         return
     end
 
-    if beefalo.sg == nil
-        or beefalo.sg:HasStateTag("busy")
-        or beefalo.sg:HasStateTag("attack") then
+    if beefalo.sg == nil then
+        print("[yf-starve] battle_cry rejected: beefalo has no stategraph")
         return
     end
 
+    if beefalo.sg:HasStateTag("busy") then
+        print("[yf-starve] battle_cry rejected: beefalo is busy")
+        return
+    end
+
+    if beefalo.sg:HasStateTag("attack") then
+        print("[yf-starve] battle_cry rejected: beefalo is attacking")
+        return
+    end
+
+    print("[yf-starve] battle_cry accepted: entering bellow")
     beefalo.sg:GoToState("bellow")
 end
 

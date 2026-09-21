@@ -120,7 +120,13 @@ end
 
 local function StartTilling(rider, beefalo)
     local locomotor = rider.components.locomotor
-    if locomotor == nil or beefalo.components.farmtiller == nil then
+    if locomotor == nil then
+        print("[yf-starve] mounted_tilling rejected: rider has no locomotor")
+        return
+    end
+
+    if beefalo.components.farmtiller == nil then
+        print("[yf-starve] mounted_tilling rejected: beefalo has no farmtiller")
         return
     end
 
@@ -137,24 +143,33 @@ local function OnTillingRequest(player)
     print("[yf-starve] RPC received: mounted_tilling")
 
     if player == nil or not player:IsValid() then
+        print("[yf-starve] mounted_tilling rejected: invalid player")
         return
     end
 
     local rider = player.components.rider
     if rider == nil or not rider:IsRiding() then
+        print("[yf-starve] mounted_tilling rejected: player is not riding")
         return
     end
 
     local beefalo = rider:GetMount()
     if beefalo == nil or not beefalo:IsValid() or beefalo.prefab ~= "beefalo" then
+        print("[yf-starve] mounted_tilling rejected: mount is not a valid beefalo")
         return
     end
 
     if beefalo._yf_tilling_rider == player then
+        print("[yf-starve] mounted_tilling accepted: stopping tilling")
         StopTilling(beefalo)
-    elseif beefalo._yf_tilling_rider == nil
-        and beefalo.sg ~= nil
-        and not beefalo.sg:HasAnyStateTag("busy", "attack", "dead") then
+    elseif beefalo._yf_tilling_rider ~= nil then
+        print("[yf-starve] mounted_tilling rejected: beefalo is already tilling")
+    elseif beefalo.sg == nil then
+        print("[yf-starve] mounted_tilling rejected: beefalo has no stategraph")
+    elseif beefalo.sg:HasAnyStateTag("busy", "attack", "dead") then
+        print("[yf-starve] mounted_tilling rejected: beefalo is busy, attacking, or dead")
+    else
+        print("[yf-starve] mounted_tilling accepted: starting tilling")
         StartTilling(player, beefalo)
     end
 end
