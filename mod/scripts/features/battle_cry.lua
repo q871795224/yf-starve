@@ -1,34 +1,5 @@
 local RPC_NAMESPACE = "yf_starve_beefalo_skill_system"
 local RPC_COMMAND = "battle_cry"
-local BATTLE_CRY_STATE = "yf_beefalo_battle_cry"
-
-local function ReturnToIdle(inst)
-    inst.sg:GoToState("idle")
-end
-
-AddStategraphPostInit("beefalo", function(sg)
-    sg.states[BATTLE_CRY_STATE] = GLOBAL.State{
-        name = BATTLE_CRY_STATE,
-        tags = { "busy" },
-
-        onenter = function(inst)
-            if inst.components.locomotor ~= nil then
-                inst.components.locomotor:StopMoving()
-            end
-
-            inst.AnimState:PlayAnimation("bellow")
-            inst.SoundEmitter:PlaySound(inst.sounds.grunt)
-            inst.sg:SetTimeout(math.max(inst.AnimState:GetCurrentAnimationLength(), 0.1))
-            print("[yf-starve] battle_cry animation state entered: bellow")
-        end,
-
-        ontimeout = ReturnToIdle,
-
-        events = {
-            GLOBAL.EventHandler("animover", ReturnToIdle),
-        },
-    }
-end)
 
 local function OnBattleCryRequest(player)
     print("[yf-starve] RPC received: battle_cry")
@@ -56,7 +27,8 @@ local function OnBattleCryRequest(player)
     end
 
     if beefalo.sg:HasStateTag("busy") then
-        print("[yf-starve] battle_cry rejected: beefalo is busy")
+        local state = beefalo.sg.currentstate
+        print("[yf-starve] battle_cry rejected: beefalo is busy in state", state ~= nil and state.name or "unknown")
         return
     end
 
@@ -65,8 +37,13 @@ local function OnBattleCryRequest(player)
         return
     end
 
-    print("[yf-starve] battle_cry accepted: entering mounted bellow state")
-    beefalo.sg:GoToState(BATTLE_CRY_STATE)
+    if beefalo.sg.states.bellow == nil then
+        print("[yf-starve] battle_cry rejected: vanilla bellow state is unavailable")
+        return
+    end
+
+    beefalo.sg:GoToState("bellow")
+    print("[yf-starve] battle_cry accepted: entered vanilla bellow state")
 end
 
 AddModRPCHandler(RPC_NAMESPACE, RPC_COMMAND, OnBattleCryRequest)
