@@ -53,42 +53,46 @@ local function DoMountedWeaponAttack(inst)
     end
 end
 
-AddStategraphState("wilson", State{
-    name = ATTACK_STATE,
-    tags = { "attack", "busy" },
+AddStategraphPostInit("wilson", function(sg)
+    sg.states[ATTACK_STATE] = GLOBAL.State{
+        name = ATTACK_STATE,
+        tags = { "attack", "busy" },
 
-    onenter = function(inst, data)
-        inst.sg.statemem.target = data ~= nil and data.target or nil
-        inst.sg.statemem.mount = data ~= nil and data.mount or nil
-        inst.sg.statemem.weapon = data ~= nil and data.weapon or nil
+        onenter = function(inst, data)
+            inst.sg.statemem.target = data ~= nil and data.target or nil
+            inst.sg.statemem.mount = data ~= nil and data.mount or nil
+            inst.sg.statemem.weapon = data ~= nil and data.weapon or nil
 
-        PlayMountedAttackAnimation(inst)
+            PlayMountedAttackAnimation(inst)
 
-        if inst.components.combat ~= nil then
-            inst.components.combat:StartAttack()
-        end
-    end,
+            if inst.components.combat ~= nil then
+                inst.components.combat:StartAttack()
+            end
+        end,
 
-    timeline = {
-        TimeEvent(ATTACK_HIT_FRAME * FRAMES, DoMountedWeaponAttack),
-    },
+        timeline = {
+            GLOBAL.TimeEvent(ATTACK_HIT_FRAME * GLOBAL.FRAMES, DoMountedWeaponAttack),
+        },
 
-    events = {
-        EventHandler("animover", FinishMountedAttack),
-    },
-})
+        events = {
+            GLOBAL.EventHandler("animover", FinishMountedAttack),
+        },
+    }
+end)
 
-AddStategraphState("wilson_client", State{
-    name = ATTACK_STATE,
-    tags = { "attack", "busy" },
-    server_states = { ATTACK_STATE },
+AddStategraphPostInit("wilson_client", function(sg)
+    sg.states[ATTACK_STATE] = GLOBAL.State{
+        name = ATTACK_STATE,
+        tags = { "attack", "busy" },
+        server_states = { ATTACK_STATE },
 
-    onenter = PlayMountedAttackAnimation,
+        onenter = PlayMountedAttackAnimation,
 
-    events = {
-        EventHandler("animover", FinishMountedAttack),
-    },
-})
+        events = {
+            GLOBAL.EventHandler("animover", FinishMountedAttack),
+        },
+    }
+end)
 
 local function OnBeefaloAttackOther(beefalo, data)
     local target = data ~= nil and data.target or nil

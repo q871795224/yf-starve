@@ -146,128 +146,130 @@ local function BeginDash(inst)
     inst.sg:GoToState(CHARGE_DASH_STATE)
 end
 
-AddStategraphState("beefalo", State{
-    name = CHARGE_WINDUP_STATE,
-    tags = { "busy", "yf_charge" },
-
-    onenter = function(inst)
-        local state = inst.sg.statemem
-        state.heading = inst.Transform:GetRotation()
-
-        if TheWorld.ismastersim then
-            StopChargeMovement(inst)
-            LockRiderControls(inst)
-        end
-
-        inst.AnimState:PlayAnimation("atk_pre")
-        inst.sg:SetTimeout(math.max(inst.AnimState:GetCurrentAnimationLength(), 0.1))
-    end,
-
-    onupdate = function(inst)
-        if TheWorld.ismastersim then
-            inst.Transform:SetRotation(inst.sg.statemem.heading)
-        end
-    end,
-
-    ontimeout = BeginDash,
-
-    events = {
-        EventHandler("animover", BeginDash),
-    },
-
-    onexit = ExitChargeState,
-})
-
-AddStategraphState("beefalo", State{
-    name = CHARGE_DASH_STATE,
-    tags = { "busy", "yf_charge" },
-
-    onenter = function(inst)
-        local state = inst.sg.statemem
-        state.heading = inst.Transform:GetRotation()
-        state.rider = GetRider(inst)
-        state.dash_ticks = 0
-        state.stall_ticks = 0
-
-        if TheWorld.ismastersim then
-            LockRiderControls(inst)
-            StopChargeMovement(inst)
-            inst.Physics:SetMotorVel(TUNING.BEEFALO_RUN_SPEED * CHARGE_SPEED_MULTIPLIER, 0, 0)
-
-            local x, _, z = inst.Transform:GetWorldPosition()
-            state.last_x = x
-            state.last_z = z
-        end
-
-        inst.AnimState:PlayAnimation("run_pre")
-        inst.AnimState:PushAnimation("run_loop", true)
-        inst.sg:SetTimeout(CHARGE_DURATION)
-    end,
-
-    onupdate = function(inst)
-        if not TheWorld.ismastersim then
-            return
-        end
-
-        local state = inst.sg.statemem
-        local rider = GetRider(inst)
-        if rider == nil or rider ~= state.rider then
-            inst.sg:GoToState(CHARGE_RECOVERY_STATE)
-            return
-        end
-
-        inst.Transform:SetRotation(state.heading)
-
-        local target = FindChargeTarget(inst)
-        if target ~= nil then
-            inst.components.combat:DoAttack(target)
-            inst.sg:GoToState(CHARGE_HIT_STATE)
-            return
-        end
-
-        if IsChargeStalled(inst) then
-            inst.sg:GoToState(CHARGE_RECOVERY_STATE)
-        end
-    end,
-
-    ontimeout = function(inst)
-        inst.sg:GoToState(CHARGE_RECOVERY_STATE)
-    end,
-
-    onexit = ExitChargeState,
-})
-
-local function MakeRecoveryState(name, animation)
-    return State{
-        name = name,
+AddStategraphPostInit("beefalo", function(sg)
+    sg.states[CHARGE_WINDUP_STATE] = GLOBAL.State{
+        name = CHARGE_WINDUP_STATE,
         tags = { "busy", "yf_charge" },
 
         onenter = function(inst)
+            local state = inst.sg.statemem
+            state.heading = inst.Transform:GetRotation()
+
             if TheWorld.ismastersim then
-                LockRiderControls(inst)
                 StopChargeMovement(inst)
+                LockRiderControls(inst)
             end
 
-            inst.AnimState:PlayAnimation(animation)
+            inst.AnimState:PlayAnimation("atk_pre")
             inst.sg:SetTimeout(math.max(inst.AnimState:GetCurrentAnimationLength(), 0.1))
         end,
 
-        ontimeout = function(inst)
-            inst.sg:GoToState("idle")
+        onupdate = function(inst)
+            if TheWorld.ismastersim then
+                inst.Transform:SetRotation(inst.sg.statemem.heading)
+            end
         end,
 
+        ontimeout = BeginDash,
+
         events = {
-            EventHandler("animover", function(inst)
-                inst.sg:GoToState("idle")
-            end),
+            GLOBAL.EventHandler("animover", BeginDash),
         },
 
         onexit = ExitChargeState,
     }
-end
 
-AddStategraphState("beefalo", MakeRecoveryState(CHARGE_HIT_STATE, "atk"))
-AddStategraphState("beefalo", MakeRecoveryState(CHARGE_RECOVERY_STATE, "run_pst"))
+    sg.states[CHARGE_DASH_STATE] = GLOBAL.State{
+        name = CHARGE_DASH_STATE,
+        tags = { "busy", "yf_charge" },
+
+        onenter = function(inst)
+            local state = inst.sg.statemem
+            state.heading = inst.Transform:GetRotation()
+            state.rider = GetRider(inst)
+            state.dash_ticks = 0
+            state.stall_ticks = 0
+
+            if TheWorld.ismastersim then
+                LockRiderControls(inst)
+                StopChargeMovement(inst)
+                inst.Physics:SetMotorVel(TUNING.BEEFALO_RUN_SPEED * CHARGE_SPEED_MULTIPLIER, 0, 0)
+
+                local x, _, z = inst.Transform:GetWorldPosition()
+                state.last_x = x
+                state.last_z = z
+            end
+
+            inst.AnimState:PlayAnimation("run_pre")
+            inst.AnimState:PushAnimation("run_loop", true)
+            inst.sg:SetTimeout(CHARGE_DURATION)
+        end,
+
+        onupdate = function(inst)
+            if not TheWorld.ismastersim then
+                return
+            end
+
+            local state = inst.sg.statemem
+            local rider = GetRider(inst)
+            if rider == nil or rider ~= state.rider then
+                inst.sg:GoToState(CHARGE_RECOVERY_STATE)
+                return
+            end
+
+            inst.Transform:SetRotation(state.heading)
+
+            local target = FindChargeTarget(inst)
+            if target ~= nil then
+                inst.components.combat:DoAttack(target)
+                inst.sg:GoToState(CHARGE_HIT_STATE)
+                return
+            end
+
+            if IsChargeStalled(inst) then
+                inst.sg:GoToState(CHARGE_RECOVERY_STATE)
+            end
+        end,
+
+        ontimeout = function(inst)
+            inst.sg:GoToState(CHARGE_RECOVERY_STATE)
+        end,
+
+        onexit = ExitChargeState,
+    }
+
+    local function MakeRecoveryState(name, animation)
+        return GLOBAL.State{
+            name = name,
+            tags = { "busy", "yf_charge" },
+
+            onenter = function(inst)
+                if TheWorld.ismastersim then
+                    LockRiderControls(inst)
+                    StopChargeMovement(inst)
+                end
+
+                inst.AnimState:PlayAnimation(animation)
+                inst.sg:SetTimeout(math.max(inst.AnimState:GetCurrentAnimationLength(), 0.1))
+            end,
+
+            ontimeout = function(inst)
+                inst.sg:GoToState("idle")
+            end,
+
+            events = {
+                GLOBAL.EventHandler("animover", function(inst)
+                    inst.sg:GoToState("idle")
+                end),
+            },
+
+            onexit = ExitChargeState,
+        }
+    end
+
+    sg.states[CHARGE_HIT_STATE] = MakeRecoveryState(CHARGE_HIT_STATE, "atk")
+    sg.states[CHARGE_RECOVERY_STATE] = MakeRecoveryState(CHARGE_RECOVERY_STATE, "run_pst")
+end)
 
 local function StartCooldown(beefalo)
     beefalo._yf_beefalo_charge_cooldown = true
