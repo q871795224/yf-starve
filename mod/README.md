@@ -12,16 +12,11 @@ The matching `wilson_client` state is registered for the visual. No local game t
 animation names, exact hit frame, and multiplayer presentation remain unverified.
 
 Mounted battle cry is a second standalone prototype. The client key (default H, configurable in the mod
-settings) asks the server to put the ridden beefalo directly into its existing `bellow` state, which plays the
-stock animation and grunt sound. It has no fear or combat effect and does not add animation assets. This
-bypasses the vanilla `heardhorn` event used by horn behavior. Verify the pose and sound in-game and across clients.
-
-Temporary animation probes are available in the development build. F10 cycles through these probes: direct
-`bellow` state, client-local `bellow` clip, vanilla `heardhorn` event, client-local `mating_taunt1` clip,
-`shake`, `matingcall`, `graze`, and the head-raised `actual_alert` state. Server probes target the ridden
-beefalo or the nearest adult beefalo within 8 units. Use F10 while mounted and while standing beside a beefalo
-to compare the animation paths. The client-local probes do not change server state. These diagnostics can
-interrupt the beefalo's current action.
+settings) asks the server to put the rider into a short custom state. While riding, the player's animation
+bank is `wilsonbeefalo`; the stock `player_mount.zip` includes the `bellow` clip. The rider state plays that
+clip and the beefalo grunt. It has no fear or combat effect and adds no animation assets. F10 triggers the
+same rider animation for testing. This bypasses the vanilla `heardhorn` event, which changes the beefalo
+entity's state but does not animate the mounted rider bank.
 
 Mounted charge is a third standalone prototype. The client key (default J, configurable in the mod settings)
 asks the server to run a short, straight charge. It reuses the beefalo's `atk_pre`, `run_pre`, `run_loop`, `atk`,
@@ -39,9 +34,9 @@ hunger. The pass ends after movement stops, the rider dismounts, the current pos
 beefalo cannot pay the hunger cost. No custom animation assets were added. Validate grid alignment, movement
 speed, animation transitions, hunger cost, and multiplayer behavior in-game before balancing it.
 
-Animation direction: reuse stock mounted-player animations first. If the rider pose proves unsuitable, then
-evaluate a custom Spriter/SCML animation and compile it into `anim/`. The prototype does not add skill-tree
-unlocks.
+Animation direction: reuse stock mounted-player animations first. The battle cry uses the existing mounted
+`bellow` clip. If a later skill needs a pose that is absent from the mounted bank, evaluate a custom
+Spriter/SCML animation and compile it into `anim/`. The prototype does not add skill-tree unlocks.
 
 Planned script areas:
 

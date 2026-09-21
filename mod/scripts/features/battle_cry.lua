@@ -1,5 +1,57 @@
 local RPC_NAMESPACE = "yf_starve_beefalo_skill_system"
 local RPC_COMMAND = "battle_cry"
+local BATTLE_CRY_STATE = "yf_mounted_battle_cry"
+local BATTLE_CRY_ANIMATION = "bellow"
+
+local function PlayMountedBattleCryAnimation(inst)
+    if inst.components.locomotor ~= nil then
+        inst.components.locomotor:StopMoving()
+    end
+
+    -- Riding switches the rider to the wilsonbeefalo bank, which includes this clip.
+    inst.AnimState:PlayAnimation(BATTLE_CRY_ANIMATION)
+end
+
+local function FinishMountedBattleCry(inst)
+    if inst.AnimState:AnimDone() then
+        inst.sg:GoToState("idle")
+    end
+end
+
+AddStategraphPostInit("wilson", function(sg)
+    sg.states[BATTLE_CRY_STATE] = GLOBAL.State{
+        name = BATTLE_CRY_STATE,
+        tags = { "busy", "canrotate" },
+
+        onenter = function(inst)
+            PlayMountedBattleCryAnimation(inst)
+
+            local rider = inst.components.rider
+            local mount = rider ~= nil and rider:GetMount() or nil
+            if mount ~= nil and mount.sounds ~= nil and mount.sounds.grunt ~= nil then
+                mount.SoundEmitter:PlaySound(mount.sounds.grunt)
+            end
+        end,
+
+        events = {
+            GLOBAL.EventHandler("animover", FinishMountedBattleCry),
+        },
+    }
+end)
+
+AddStategraphPostInit("wilson_client", function(sg)
+    sg.states[BATTLE_CRY_STATE] = GLOBAL.State{
+        name = BATTLE_CRY_STATE,
+        tags = { "busy", "canrotate" },
+        server_states = { BATTLE_CRY_STATE },
+
+        onenter = PlayMountedBattleCryAnimation,
+
+        events = {
+            GLOBAL.EventHandler("animover", FinishMountedBattleCry),
+        },
+    }
+end)
 
 local function OnBattleCryRequest(player)
     print("[yf-starve] RPC received: battle_cry")
@@ -21,29 +73,30 @@ local function OnBattleCryRequest(player)
         return
     end
 
-    if beefalo.sg == nil then
-        print("[yf-starve] battle_cry rejected: beefalo has no stategraph")
+    if beefalo.sg == nil or player.sg == nil then
+        print("[yf-starve] battle_cry rejected: missing stategraph")
         return
     end
 
-    local state = beefalo.sg.currentstate
-    if state ~= nil and state.name == "bellow" then
-        print("[yf-starve] battle_cry rejected: bellow animation is already playing")
+    local state = player.sg.currentstate
+    if state ~= nil and state.name == BATTLE_CRY_STATE then
+        print("[yf-starve] battle_cry rejected: animation is already playing")
         return
     end
 
-    if beefalo.sg:HasStateTag("busy") then
-        print("[yf-starve] battle_cry rejected: beefalo is busy in state", state ~= nil and state.name or "unknown")
+    if player.sg:HasStateTag("busy") then
+        print("[yf-starve] battle_cry rejected: rider is busy")
         return
     end
 
-    if beefalo.sg:HasStateTag("attack") then
-        print("[yf-starve] battle_cry rejected: beefalo is attacking")
+    if beefalo.sg:HasStateTag("busy") or beefalo.sg:HasStateTag("attack") then
+        print("[yf-starve] battle_cry rejected: beefalo is busy or attacking")
         return
     end
 
-    beefalo.sg:GoToState("bellow")
-    print("[yf-starve] battle_cry accepted: entered vanilla bellow state")
+    player.sg:GoToState(BATTLE_CRY_STATE)
+    print("[yf-starve] battle_cry accepted: rider animation active:",
+        player.AnimState:IsCurrentAnimation(BATTLE_CRY_ANIMATION))
 end
 
 AddModRPCHandler(RPC_NAMESPACE, RPC_COMMAND, OnBattleCryRequest)
