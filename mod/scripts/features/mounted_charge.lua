@@ -17,6 +17,10 @@ local CHARGE_MIN_MOVEMENT_SQ = 0.0004
 
 local CANT_TARGET_TAGS = { "DECOR", "FX", "INLIMBO", "NOCLICK" }
 
+local function IsMasterSim()
+    return GLOBAL.TheWorld ~= nil and GLOBAL.TheWorld.ismastersim
+end
+
 local function GetRider(inst)
     local rideable = inst.components.rideable
     return rideable ~= nil and rideable:GetRider() or nil
@@ -33,7 +37,7 @@ local function StopChargeMovement(inst)
 end
 
 local function LockRiderControls(inst)
-    if not TheWorld.ismastersim or inst._yf_charge_locked_rider ~= nil then
+    if not IsMasterSim() or inst._yf_charge_locked_rider ~= nil then
         return
     end
 
@@ -58,7 +62,7 @@ local function RestoreRiderControls(inst)
 end
 
 local function ReleaseRiderControlsAfterCharge(inst)
-    if not TheWorld.ismastersim then
+    if not IsMasterSim() then
         return
     end
 
@@ -136,7 +140,7 @@ local function IsChargeStalled(inst)
 end
 
 local function ExitChargeState(inst)
-    if TheWorld.ismastersim then
+    if IsMasterSim() then
         StopChargeMovement(inst)
         ReleaseRiderControlsAfterCharge(inst)
     end
@@ -155,7 +159,7 @@ AddStategraphPostInit("beefalo", function(sg)
             local state = inst.sg.statemem
             state.heading = inst.Transform:GetRotation()
 
-            if TheWorld.ismastersim then
+            if IsMasterSim() then
                 StopChargeMovement(inst)
                 LockRiderControls(inst)
             end
@@ -165,7 +169,7 @@ AddStategraphPostInit("beefalo", function(sg)
         end,
 
         onupdate = function(inst)
-            if TheWorld.ismastersim then
+            if IsMasterSim() then
                 inst.Transform:SetRotation(inst.sg.statemem.heading)
             end
         end,
@@ -190,7 +194,7 @@ AddStategraphPostInit("beefalo", function(sg)
             state.dash_ticks = 0
             state.stall_ticks = 0
 
-            if TheWorld.ismastersim then
+            if IsMasterSim() then
                 LockRiderControls(inst)
                 StopChargeMovement(inst)
                 inst.Physics:SetMotorVel(TUNING.BEEFALO_RUN_SPEED * CHARGE_SPEED_MULTIPLIER, 0, 0)
@@ -206,7 +210,7 @@ AddStategraphPostInit("beefalo", function(sg)
         end,
 
         onupdate = function(inst)
-            if not TheWorld.ismastersim then
+            if not IsMasterSim() then
                 return
             end
 
@@ -244,7 +248,7 @@ AddStategraphPostInit("beefalo", function(sg)
             tags = { "busy", "yf_charge" },
 
             onenter = function(inst)
-                if TheWorld.ismastersim then
+                if IsMasterSim() then
                     LockRiderControls(inst)
                     StopChargeMovement(inst)
                 end

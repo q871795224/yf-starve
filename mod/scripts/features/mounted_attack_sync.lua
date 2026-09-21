@@ -1,6 +1,10 @@
 local ATTACK_STATE = "yf_mounted_weapon_attack"
 local ATTACK_HIT_FRAME = 10
 
+local function IsMasterSim()
+    return GLOBAL.TheWorld ~= nil and GLOBAL.TheWorld.ismastersim
+end
+
 local function GetMeleeWeapon(inst)
     local inventory = inst.components.inventory
     local weapon = inventory ~= nil and inventory:GetEquippedItem(EQUIPSLOTS.HANDS) or nil
@@ -127,7 +131,7 @@ local function OnBeefaloAttackOther(beefalo, data)
 end
 
 local function OnBeefaloPostInit(inst)
-    if TheWorld == nil or not TheWorld.ismastersim then
+    if not IsMasterSim() then
         return
     end
 

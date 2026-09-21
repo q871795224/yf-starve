@@ -45,7 +45,12 @@ end
 
 local function GetFarmGridPoint(inst)
     local x, _, z = inst.Transform:GetWorldPosition()
-    local center_x, _, center_z = TheWorld.Map:GetTileCenterPoint(x, 0, z)
+    local world = GLOBAL.TheWorld
+    if world == nil or world.Map == nil then
+        return nil, nil
+    end
+
+    local center_x, _, center_z = world.Map:GetTileCenterPoint(x, 0, z)
     local slot_x = RoundFarmGridSlot(x - center_x)
     local slot_z = RoundFarmGridSlot(z - center_z)
     local point_x = center_x + slot_x * FARM_SOIL_SPACING
@@ -89,6 +94,10 @@ local function UpdateTilling(beefalo)
     PlayTillingWalk(beefalo)
 
     local point, plot_key = GetFarmGridPoint(beefalo)
+    if point == nil then
+        StopTilling(beefalo)
+        return
+    end
     if plot_key == beefalo._yf_tilling_last_plot then
         return
     end
@@ -177,7 +186,8 @@ if not GLOBAL.TheNet:IsDedicated() then
 end
 
 AddPrefabPostInit("beefalo", function(inst)
-    if TheWorld == nil or not TheWorld.ismastersim then
+    local world = GLOBAL.TheWorld
+    if world == nil or not world.ismastersim then
         return
     end
 
