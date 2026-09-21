@@ -16,6 +16,13 @@ settings) asks the server to put the ridden beefalo directly into its existing `
 stock animation and grunt sound. It has no fear or combat effect and does not add animation assets. This
 bypasses the vanilla `heardhorn` event used by horn behavior. Verify the pose and sound in-game and across clients.
 
+Temporary animation probes are available in the development build. F10 cycles through these probes: direct
+`bellow` state, vanilla `heardhorn` event, `shake`, `matingcall`, `graze`, client-local `bellow` clip,
+client-local `mating_taunt1` clip, and the head-raised `actual_alert` state. Server probes target the ridden
+beefalo or the nearest adult beefalo within 8 units. Use F10 while mounted and while standing beside a beefalo
+to compare the animation paths. The client-local probes do not change server state. These diagnostics can
+interrupt the beefalo's current action.
+
 Mounted charge is a third standalone prototype. The client key (default J, configurable in the mod settings)
 asks the server to run a short, straight charge. It reuses the beefalo's `atk_pre`, `run_pre`, `run_loop`, `atk`,
 and `run_pst` animations, disables rider controls during the action, and attacks the first valid target in its
