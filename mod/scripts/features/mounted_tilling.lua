@@ -134,6 +134,8 @@ local function StartTilling(rider, beefalo)
 end
 
 local function OnTillingRequest(player)
+    print("[yf-starve] RPC received: mounted_tilling")
+
     if player == nil or not player:IsValid() then
         return
     end
@@ -160,17 +162,21 @@ end
 AddModRPCHandler(RPC_NAMESPACE, RPC_COMMAND, OnTillingRequest)
 
 local function OnTillingKeyDown()
+    print("[yf-starve] keydown: mounted_tilling")
+
     local player = GLOBAL.ThePlayer
     if player == nil or player.HUD == nil then
         return
     end
 
-    if GLOBAL.TheFrontEnd:GetActiveScreen() ~= player.HUD
+    local active_screen = GLOBAL.TheFrontEnd:GetActiveScreen()
+    if (active_screen ~= player.HUD and (active_screen == nil or active_screen.name ~= "HUD"))
         or player.HUD:IsChatInputScreenOpen()
         or player.HUD:IsConsoleScreenOpen() then
         return
     end
 
+    print("[yf-starve] sending RPC: mounted_tilling")
     GLOBAL.SendModRPCToServer(MOD_RPC[RPC_NAMESPACE][RPC_COMMAND])
 end
 
@@ -182,6 +188,7 @@ if not GLOBAL.TheNet:IsDedicated() then
 
     if key >= 0 then
         GLOBAL.TheInput:AddKeyDownHandler(key, OnTillingKeyDown)
+        print("[yf-starve] registered mounted_tilling key handler:", key)
     end
 end
 

@@ -285,6 +285,8 @@ local function StartCooldown(beefalo)
 end
 
 local function OnChargeRequest(player)
+    print("[yf-starve] RPC received: mounted_charge")
+
     if player == nil or not player:IsValid() then
         return
     end
@@ -313,17 +315,21 @@ end
 AddModRPCHandler(RPC_NAMESPACE, RPC_COMMAND, OnChargeRequest)
 
 local function OnChargeKeyDown()
+    print("[yf-starve] keydown: mounted_charge")
+
     local player = GLOBAL.ThePlayer
     if player == nil or player.HUD == nil then
         return
     end
 
-    if GLOBAL.TheFrontEnd:GetActiveScreen() ~= player.HUD
+    local active_screen = GLOBAL.TheFrontEnd:GetActiveScreen()
+    if (active_screen ~= player.HUD and (active_screen == nil or active_screen.name ~= "HUD"))
         or player.HUD:IsChatInputScreenOpen()
         or player.HUD:IsConsoleScreenOpen() then
         return
     end
 
+    print("[yf-starve] sending RPC: mounted_charge")
     GLOBAL.SendModRPCToServer(MOD_RPC[RPC_NAMESPACE][RPC_COMMAND])
 end
 
@@ -335,5 +341,6 @@ if not GLOBAL.TheNet:IsDedicated() then
 
     if key >= 0 then
         GLOBAL.TheInput:AddKeyDownHandler(key, OnChargeKeyDown)
+        print("[yf-starve] registered mounted_charge key handler:", key)
     end
 end
