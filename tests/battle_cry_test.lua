@@ -93,19 +93,23 @@ assert(sent_rpc == 1, "H did not send the battle cry RPC")
 assert(go_to_state_calls == 1, "valid rider did not trigger the state")
 assert(beefalo.sg.currentstate.name == "bellow", "valid rider did not enter vanilla bellow")
 
+key_handler()
+assert(sent_rpc == 2, "repeat H did not reach the RPC handler")
+assert(go_to_state_calls == 1, "repeat H restarted the bellow animation")
+
 active_screen = {}
 key_handler()
-assert(sent_rpc == 1, "hotkey sent an RPC while outside the HUD")
+assert(sent_rpc == 2, "hotkey sent an RPC while outside the HUD")
 active_screen = hud
 
 chat_open = true
 key_handler()
-assert(sent_rpc == 1, "hotkey sent an RPC while chat was open")
+assert(sent_rpc == 2, "hotkey sent an RPC while chat was open")
 chat_open = false
 
 console_open = true
 key_handler()
-assert(sent_rpc == 1, "hotkey sent an RPC while the console was open")
+assert(sent_rpc == 2, "hotkey sent an RPC while the console was open")
 console_open = false
 
 riding = false
@@ -127,4 +131,4 @@ beefalo.prefab = "koalefant"
 server_handler(player)
 assert(go_to_state_calls == 1, "non-beefalo mount triggered the state")
 
-print("battle_cry_test: 13 checks passed")
+print("battle_cry_test: 15 checks passed")

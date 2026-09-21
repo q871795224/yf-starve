@@ -26,8 +26,13 @@ local function OnBattleCryRequest(player)
         return
     end
 
+    local state = beefalo.sg.currentstate
+    if state ~= nil and state.name == "bellow" then
+        print("[yf-starve] battle_cry rejected: bellow animation is already playing")
+        return
+    end
+
     if beefalo.sg:HasStateTag("busy") then
-        local state = beefalo.sg.currentstate
         print("[yf-starve] battle_cry rejected: beefalo is busy in state", state ~= nil and state.name or "unknown")
         return
     end
