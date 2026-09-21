@@ -12,4 +12,20 @@ shipwrecked_compatible = false
 all_clients_require_mod = true
 client_only_mod = false
 
-configuration_options = {}
+configuration_options =
+{
+    {
+        name = "battle_cry_key",
+        label = "战吼按键",
+        hover = "骑乘牛时触发战吼演出。",
+        options =
+        {
+            { description = "H", data = 104 },
+            { description = "R", data = 114 },
+            { description = "V", data = 118 },
+            { description = "关闭", data = -1 },
+        },
+        default = 104,
+        client = true,
+    },
+}
