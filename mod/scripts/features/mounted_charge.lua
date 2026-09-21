@@ -8,6 +8,7 @@ local CHARGE_RECOVERY_STATE = "yf_beefalo_charge_recovery"
 local CHARGE_SPEED_MULTIPLIER = 1.5
 local CHARGE_DURATION = 0.8
 local CHARGE_COOLDOWN = 4
+local CHARGE_CONTROL_LOCK_TIMEOUT = 3.5
 local CHARGE_SCAN_RADIUS = 2.5
 local CHARGE_MAX_FORWARD = 2
 local CHARGE_HALF_WIDTH = 1.1
@@ -36,6 +37,25 @@ local function StopChargeMovement(inst)
     end
 end
 
+local function RestoreRiderControls(inst)
+    local rider = inst._yf_charge_locked_rider
+    local controller = rider ~= nil and rider:IsValid() and rider.components.playercontroller or nil
+    local controller_was_enabled = inst._yf_charge_controller_was_enabled
+    if controller ~= nil and controller_was_enabled ~= nil then
+        controller:Enable(controller_was_enabled)
+        print("[yf-starve] mounted_charge restored rider controls:", controller_was_enabled)
+    end
+
+    local failsafe_task = inst._yf_charge_control_failsafe_task
+    inst._yf_charge_control_failsafe_task = nil
+    if failsafe_task ~= nil then
+        failsafe_task:Cancel()
+    end
+
+    inst._yf_charge_locked_rider = nil
+    inst._yf_charge_controller_was_enabled = nil
+end
+
 local function LockRiderControls(inst)
     if not IsMasterSim() or inst._yf_charge_locked_rider ~= nil then
         return
@@ -44,21 +64,31 @@ local function LockRiderControls(inst)
     local rider = GetRider(inst)
     local controller = rider ~= nil and rider.components.playercontroller or nil
     if controller ~= nil then
+        local controller_was_enabled = controller:IsEnabled()
+        if not controller_was_enabled then
+            print("[yf-starve] mounted_charge left controls unchanged: controller was already disabled")
+            return
+        end
+
         inst._yf_charge_locked_rider = rider
-        inst._yf_charge_controller_was_enabled = controller:IsEnabled()
+        inst._yf_charge_controller_was_enabled = controller_was_enabled
         controller:Enable(false)
-    end
-end
+        print("[yf-starve] mounted_charge locked rider controls")
 
-local function RestoreRiderControls(inst)
-    local rider = inst._yf_charge_locked_rider
-    local controller = rider ~= nil and rider:IsValid() and rider.components.playercontroller or nil
-    if controller ~= nil and inst._yf_charge_controller_was_enabled then
-        controller:Enable(true)
-    end
+        inst._yf_charge_control_failsafe_task = inst:DoTaskInTime(CHARGE_CONTROL_LOCK_TIMEOUT, function()
+            if not inst:IsValid() or inst._yf_charge_locked_rider == nil then
+                return
+            end
 
-    inst._yf_charge_locked_rider = nil
-    inst._yf_charge_controller_was_enabled = nil
+            inst._yf_charge_control_failsafe_task = nil
+            print("[yf-starve] mounted_charge control failsafe fired")
+            if inst.sg ~= nil and inst.sg:HasStateTag("yf_charge") then
+                StopChargeMovement(inst)
+                inst.sg:GoToState("idle")
+            end
+            RestoreRiderControls(inst)
+        end)
+    end
 end
 
 local function ReleaseRiderControlsAfterCharge(inst)

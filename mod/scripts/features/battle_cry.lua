@@ -36,8 +36,8 @@ local function OnBattleCryRequest(player)
         return
     end
 
-    print("[yf-starve] battle_cry accepted: entering bellow")
-    beefalo.sg:GoToState("bellow")
+    print("[yf-starve] battle_cry accepted: sending vanilla heardhorn event")
+    beefalo:PushEvent("heardhorn", { musician = player })
 end
 
 AddModRPCHandler(RPC_NAMESPACE, RPC_COMMAND, OnBattleCryRequest)
