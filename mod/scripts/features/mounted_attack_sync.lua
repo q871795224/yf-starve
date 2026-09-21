@@ -127,7 +127,7 @@ local function OnBeefaloAttackOther(beefalo, data)
 end
 
 local function OnBeefaloPostInit(inst)
-    if not TheWorld.ismastersim then
+    if TheWorld == nil or not TheWorld.ismastersim then
         return
     end
 

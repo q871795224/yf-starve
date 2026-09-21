@@ -177,7 +177,7 @@ if not GLOBAL.TheNet:IsDedicated() then
 end
 
 AddPrefabPostInit("beefalo", function(inst)
-    if not TheWorld.ismastersim then
+    if TheWorld == nil or not TheWorld.ismastersim then
         return
     end
 
