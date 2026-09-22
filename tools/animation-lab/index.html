@@ -268,15 +268,11 @@
           { id: "bellow", label: "战吼", clips: ["bellow"] },
           { id: "beefalo-attack-side", label: "牛攻击（骑手保持坐姿）· 侧向", clips: ["atk_pre_side", "atk_side"] },
           { id: "rider-attack-side", label: "骑手单独攻击 · 侧向", clips: ["player_atk_pre_side", "player_atk_lag_side", "player_atk_side"] },
-          { id: "combined-attack-side", label: "牛 + 骑手同步攻击 · 侧向", mode: "parallel", tracks: [
-            { role: "beefalo", clips: ["atk_pre_side", "atk_side"] },
-            { role: "rider", clips: ["player_atk_pre_side", "player_atk_lag_side", "player_atk_side"] }
-          ] },
           { id: "till-side", label: "犁地 / 步行 · 侧向", clips: ["walk_pre_side", "walk_loop_side", "walk_pst_side"] },
           { id: "graze", label: "吃草", clips: ["graze2_pre", "graze2_loop", "graze2_pst"] },
           { id: "run-side", label: "奔跑 · 侧向", clips: ["run_pre_side", "run_loop_side", "run_pst_side"] }
         ],
-        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "atk_* 是牛攻击、player_atk_* 是骑手单独攻击；同步选项以骑手鞍具为基准重新对齐牛轨道", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
+        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "atk_* 是牛攻击、player_atk_* 是骑手单独攻击；两者的空间根和骑手姿态不同，不做直接图层拼接", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
       },
       {
         id: "mount",
@@ -327,7 +323,7 @@
         buildLabel: "grass gator / rider（参考）",
         sequences: [
           { id: "bellow", label: "战吼", clips: ["bellow"] },
-          { id: "beefalo-attack-side", label: "牛攻击 · 侧向", clips: ["atk_pre_side", "atk_side"] },
+          { id: "beefalo-attack-side", label: "牛攻击（骑手保持坐姿）· 侧向", clips: ["atk_pre_side", "atk_side"] },
           { id: "graze", label: "吃草", clips: ["graze2_pre", "graze2_loop", "graze2_pst"] },
           { id: "walk-graze", label: "边走边吃草", clips: ["walk_graze2_pre", "walk_graze2_loop", "walk_graze2_pst"] }
         ],
@@ -382,7 +378,6 @@
       animation: "",
       sequence: null,
       sequenceIndex: 0,
-      composedClip: null,
       frame: 0,
       playing: false,
       timer: null,
@@ -415,18 +410,12 @@
     }
 
     function currentClip() {
-      if (state.composedClip) return state.composedClip;
       return state.animData?.banks?.[state.bank]?.[state.animation] || null;
     }
 
     function availableSequences() {
       const clips = state.animData?.banks?.[state.bank] || {};
-      return (state.preset?.sequences || []).filter((sequence) => {
-        if (sequence.mode === "parallel") {
-          return sequence.tracks?.length > 0 && sequence.tracks.every((track) => track.clips.every((name) => clips[name]));
-        }
-        return sequence.clips.every((name) => clips[name]);
-      });
+      return (state.preset?.sequences || []).filter((sequence) => sequence.clips.every((name) => clips[name]));
     }
 
     function sequenceClip(index = state.sequenceIndex) {
@@ -438,106 +427,9 @@
       const select = $("sequenceSelect");
       select.replaceChildren(new Option("单个 Clip", ""));
       for (const sequence of availableSequences()) {
-        const partCount = sequence.mode === "parallel"
-          ? `同步 ${sequence.tracks.length} 轨`
-          : `${sequence.clips.length} 段`;
-        select.appendChild(new Option(`${sequence.label} · ${partCount}`, sequence.id));
+        select.appendChild(new Option(`${sequence.label} · ${sequence.clips.length} 段`, sequence.id));
       }
       select.value = state.sequence?.id || "";
-    }
-
-    function isBeefaloElement(item) {
-      return item.name.startsWith("beefalo_") || item.name === "swap_saddle";
-    }
-
-    function trackFrames(track) {
-      const clips = state.animData?.banks?.[state.bank] || {};
-      return track.clips.flatMap((name) => clips[name]?.frames || []);
-    }
-
-    function itemMatrix(item) {
-      return [item.m_a, item.m_b, item.m_c, item.m_d, item.m_tx, item.m_ty];
-    }
-
-    function multiplyMatrices(left, right) {
-      return [
-        left[0] * right[0] + left[2] * right[1],
-        left[1] * right[0] + left[3] * right[1],
-        left[0] * right[2] + left[2] * right[3],
-        left[1] * right[2] + left[3] * right[3],
-        left[0] * right[4] + left[2] * right[5] + left[4],
-        left[1] * right[4] + left[3] * right[5] + left[5]
-      ];
-    }
-
-    function invertMatrix(matrix) {
-      const [a, b, c, d, tx, ty] = matrix;
-      const determinant = a * d - b * c;
-      if (Math.abs(determinant) < 0.000001) return null;
-      return [
-        d / determinant,
-        -b / determinant,
-        -c / determinant,
-        a / determinant,
-        (c * ty - d * tx) / determinant,
-        (b * tx - a * ty) / determinant
-      ];
-    }
-
-    function alignTrackToBase(sourceFrame, baseFrame, anchorName) {
-      const sourceAnchor = sourceFrame.elements.find((item) => item.name === anchorName);
-      const baseAnchor = baseFrame.elements.find((item) => item.name === anchorName);
-      if (!sourceAnchor || !baseAnchor) return null;
-      const inverse = invertMatrix(itemMatrix(sourceAnchor));
-      return inverse ? multiplyMatrices(itemMatrix(baseAnchor), inverse) : null;
-    }
-
-    function transformItem(item, matrix) {
-      if (!matrix) return item;
-      const transformed = multiplyMatrices(matrix, itemMatrix(item));
-      return {
-        ...item,
-        m_a: transformed[0],
-        m_b: transformed[1],
-        m_c: transformed[2],
-        m_d: transformed[3],
-        m_tx: transformed[4],
-        m_ty: transformed[5]
-      };
-    }
-
-    function composeParallelSequence(sequence) {
-      const tracks = sequence.tracks.map((track) => ({
-        ...track,
-        frames: trackFrames(track)
-      }));
-      const numframes = Math.max(...tracks.map((track) => track.frames.length));
-      const firstClip = state.animData.banks[state.bank][sequence.tracks[0].clips[0]];
-      const frames = Array.from({ length: numframes }, (_, index) => {
-        const selected = tracks.map((track) => track.frames[Math.min(index, track.frames.length - 1)]);
-        const cowFrame = selected[tracks.findIndex((track) => track.role === "beefalo")];
-        const riderFrame = selected[tracks.findIndex((track) => track.role === "rider")];
-        // The two official clips use different root poses. Keep the rider
-        // attack as the base scene and retarget the cow attack around its
-        // saddle, otherwise the cow head and rider drift apart immediately.
-        const cowAlignment = alignTrackToBase(cowFrame, riderFrame, "swap_saddle");
-        const elements = selected.flatMap((frame, trackIndex) => frame.elements.filter((item) => {
-          const beefalo = isBeefaloElement(item);
-          return tracks[trackIndex].role === "beefalo" ? beefalo : !beefalo;
-        }).map((item) => tracks[trackIndex].role === "beefalo" ? transformItem(item, cowAlignment) : item));
-        return {
-          x: 0,
-          y: 0,
-          w: 0,
-          h: 0,
-          elements
-        };
-      });
-      return {
-        framerate: firstClip.framerate,
-        numframes,
-        frames
-      };
     }
 
     function buildFrame(name, frame) {
@@ -604,11 +496,7 @@
         img.style.display = "block";
       }
       $("frameRange").value = String(state.frame);
-      const sequencePart = state.sequence
-        ? state.sequence.mode === "parallel"
-          ? ` · 同步 ${state.sequence.tracks.length} 轨`
-          : ` · 组合 ${state.sequenceIndex + 1}/${state.sequence.clips.length}`
-        : "";
+      const sequencePart = state.sequence ? ` · 组合 ${state.sequenceIndex + 1}/${state.sequence.clips.length}` : "";
       $("frameReadout").textContent = `帧 ${state.frame + 1} / ${clip.numframes} · ${(clip.numframes / clip.framerate).toFixed(2)}s${sequencePart}`;
       $("emptyState").hidden = [...state.imageById.values()].some((img) => img.style.display === "block");
     }
@@ -662,18 +550,12 @@
       const clip = currentClip();
       $("bankDisplay").textContent = state.preset ? `${state.preset.appearanceLabel} · ${state.bank}` : "—";
       $("bankValue").textContent = state.bank || "—";
-      $("animValue").textContent = state.composedClip ? "并行图层组合" : (state.animation || "—");
-      $("sequenceValue").textContent = state.sequence
-        ? state.sequence.mode === "parallel"
-          ? `${state.sequence.label} · ${state.sequence.tracks.length} 轨`
-          : `${state.sequence.label} · ${state.sequenceIndex + 1}/${state.sequence.clips.length}`
-        : "单个 Clip";
+      $("animValue").textContent = state.animation || "—";
+      $("sequenceValue").textContent = state.sequence ? `${state.sequence.label} · ${state.sequenceIndex + 1}/${state.sequence.clips.length}` : "单个 Clip";
       $("fpsValue").textContent = clip ? `${clip.framerate} FPS` : "—";
       $("framesValue").textContent = clip ? String(clip.numframes) : "—";
       $("clipCountValue").textContent = state.animData?.banks?.[state.bank] ? `${Object.keys(state.animData.banks[state.bank]).length} 个` : "—";
-      $("phaseValue").textContent = clip
-        ? state.sequence?.mode === "parallel" ? "同步组合" : phaseName(state.animation)
-        : "—";
+      $("phaseValue").textContent = clip ? phaseName(state.animation) : "—";
       $("buildValue").textContent = state.preset?.buildLabel || "—";
       $("sourceCaption").textContent = state.preset ? `${state.preset.label} / ${state.sequence?.label || state.animation}` : "—";
       const notes = $("clipNotes");
@@ -709,7 +591,6 @@
     }
 
     function showSequenceClip(index, frame = 0) {
-      if (state.sequence?.mode === "parallel") return false;
       const clip = sequenceClip(index);
       if (!state.sequence || !clip) return false;
       state.sequenceIndex = index;
@@ -760,7 +641,7 @@
       let clip = currentClip();
       if (!clip || state.playing) return;
       if (state.playMode === "once" && state.frame >= clip.numframes - 1) {
-        if (state.sequence && state.sequence.mode !== "parallel") showSequenceClip(0);
+        if (state.sequence) showSequenceClip(0);
         else renderFrame(0);
       }
       state.playing = true;
@@ -779,7 +660,7 @@
           }, 1000 / clip.framerate / state.speed);
           return;
         }
-        if (state.sequence && state.sequence.mode !== "parallel" && state.sequenceIndex < state.sequence.clips.length - 1) {
+        if (state.sequence && state.sequenceIndex < state.sequence.clips.length - 1) {
           showSequenceClip(state.sequenceIndex + 1);
           state.timer = window.setTimeout(tick, 1000 / clip.framerate / state.speed);
           return;
@@ -791,7 +672,7 @@
         const pause = state.playMode === "rest" ? 500 : 0;
         state.timer = window.setTimeout(() => {
           if (!state.playing) return;
-          if (state.sequence && state.sequence.mode !== "parallel") showSequenceClip(0);
+          if (state.sequence) showSequenceClip(0);
           else renderFrame(0);
           tick();
         }, pause);
@@ -810,7 +691,7 @@
 
     function step(delta) {
       stop();
-      if (!state.sequence || state.sequence.mode === "parallel") {
+      if (!state.sequence) {
         renderFrame(state.frame + delta);
         return;
       }
@@ -836,7 +717,6 @@
       state.preset = preset;
       state.sequence = null;
       state.sequenceIndex = 0;
-      state.composedClip = null;
       const savedView = state.viewByAppearance.get(preset.appearanceId);
       state.autoFit = !savedView;
       state.fitPending = !savedView;
@@ -907,7 +787,6 @@
     $("animSelect").addEventListener("change", (event) => {
       state.sequence = null;
       state.sequenceIndex = 0;
-      state.composedClip = null;
       $("sequenceSelect").value = "";
       state.animation = event.target.value;
       loadClip();
@@ -916,15 +795,7 @@
       const sequence = availableSequences().find((item) => item.id === event.target.value) || null;
       state.sequence = sequence;
       state.sequenceIndex = 0;
-      state.composedClip = sequence?.mode === "parallel" ? composeParallelSequence(sequence) : null;
-      if (sequence && sequence.mode !== "parallel") {
-        state.animation = sequence.clips[0];
-        $("animSelect").value = state.animation;
-      } else if (sequence?.mode === "parallel") {
-        $("animSelect").value = "";
-      } else {
-        $("animSelect").value = state.animation;
-      }
+      if (sequence) state.animation = sequence.clips[0];
       loadClip();
     });
     $("playMode").addEventListener("change", (event) => {
