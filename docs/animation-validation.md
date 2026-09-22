@@ -47,17 +47,26 @@ python3 tools/catalog_anim_banks.py --contains mount
 
 官方 KTEX 图集按游戏坐标上下倒置存储；导出 `official-mount` 的 PNG 时必须先做垂直翻转，再按 build 的 UV 区域裁剪。否则牛身、头部和鞍具会显示成错位的矩形块。官方预览入口带有资源版本参数，重新生成资源后浏览器不会继续复用旧贴图缓存。
 
+当前工作区还提供一个自制同步攻击原型生成器：
+
+```bash
+python3 tools/build_mounted_attack_preview.py
+```
+
+它以 `atk_pre_side` / `atk_side` 作为完整场景，保留牛和骑手随牛攻击产生的整体移动；只取 `player_atk_*` 的手臂、手和武器图层，并把这些图层相对于 `torso` 的变换映射到牛攻击的每一帧。输出位于 `temp/animation-lab/mounted-attack-prototype/`，页面中的“自制同步攻击原型”会读取它。这个 JSON 只用于确认姿态和节奏，最终仍需在 Spriter / Mod Tools 中编译成游戏资源。
+
 项目内置了一个整理过布局的浏览器，不需要拖文件或手动填写贴图路径。启动服务：
 
 ```bash
 python3 tools/serve_animation_lab.py
 ```
 
-浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“官方骑乘动作”预览。页面按三层关系组织资源：**外观 / Build → 动作资源集 → 具体动作 Clip**。当前有三个外观组和六个动作资源集：
+浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“官方骑乘动作”预览。页面按三层关系组织资源：**外观 / Build → 动作资源集 → 具体动作 Clip**。当前有三个外观组和七个动作资源集：
 
 | 外观 / 动作资源集 | 内容 | 重点动作 |
 | --- | --- | --- |
 | 官方 Beefalo / 骑手 → 官方骑乘动作 | Steam depot 的 `wilsonbeefalo`，331 个 Clip | `bellow`、`mount`、`dismount`、`heavy_mount`、`atk_*` |
+| 官方 Beefalo / 骑手 → 自制同步攻击原型 | 基于官方 `atk_*` 的 23 帧预览 | `yf_mounted_atk_pre_side`、`yf_mounted_atk_side` |
 | 普通牛 / Beefalo → 骑手装具 | 完整 rider + beefalo build，2 个 Clip | `mount_shoes`、`dismount_shoes` |
 | 普通牛 / Beefalo → 蓄力冲撞 | `wilsonbeefalo`，24 个 Clip | `lancecharge_pre/loop/pst_*` |
 | 水草牛 / Grass Gator → 基础与战斗 | gator build，23 个 Clip | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |
@@ -85,7 +94,7 @@ Clip 旁边的“组合动作”下拉框会把相关片段按顺序播放。例
 
 | 动作组 | 已发现的片段 | 可以承载的功能 |
 | --- | --- | --- |
-| 战斗 | `atk_pre_*` → `atk_*`，`player_atk_*`，`lancecharge_pre_*` → `lancecharge_loop_*` → `lancecharge_pst_*` | 牛命中时骑手同步攻击；蓄力冲撞 |
+| 战斗 | `atk_pre_*` → `atk_*`，`player_atk_*`，`yf_mounted_atk_pre_side` → `yf_mounted_atk_side`，`lancecharge_pre_*` → `lancecharge_loop_*` → `lancecharge_pst_*` | 牛攻击、同步攻击原型、蓄力冲撞 |
 | 战吼/反馈 | `bellow`、`taunt`、`alert_pre/idle/pst`、`shake` | 战吼、警戒、技能反馈 |
 | 移动 | `run_pre/loop/pst_*`、`idle_walk_pre/loop/pst_*` | 犁地、自动移动、冲撞过程 |
 | 骑乘 | `mount`、`dismount`、`heavy_mount`、`buck` | 上下牛、被甩落、承受冲击 |

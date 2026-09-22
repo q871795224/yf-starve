@@ -291,6 +291,25 @@
         notes: ["完整骑手与 beefalo build", "适合检查上下牛的组合姿态", "来源：BetterBeefalo 参考资源"]
       },
       {
+        id: "mounted-attack-prototype",
+        label: "自制同步攻击原型",
+        meta: "23 frames",
+        appearanceId: "official-beefalo",
+        appearanceLabel: "官方 Beefalo / 骑手",
+        appearanceMeta: "wilsonbeefalo · 自制动画原型",
+        anim: "/temp/animation-lab/mounted-attack-prototype/anim.json",
+        build: "/temp/animation-lab/official-mount/build.json",
+        images: "/temp/animation-lab/official-mount/images/",
+        assetVersion: "official-mount-dxt5-flipped-20260922",
+        defaultBank: "wilsonbeefalo",
+        defaultAnim: "yf_mounted_atk_side",
+        buildLabel: "官方 Beefalo + 鞍具 / 共享骑手根",
+        sequences: [
+          { id: "mounted-attack-side", label: "自制同步攻击 · 侧向", clips: ["yf_mounted_atk_pre_side", "yf_mounted_atk_side"] }
+        ],
+        notes: ["以官方 atk_pre_side / atk_side 为牛和骑手移动基底", "只替换骑手上半身手臂、手和武器图层", "骑手攻击姿态按 torso 根重新映射到牛攻击的每一帧", "当前是离线原型，尚未编译为游戏 anim.bin"]
+      },
+      {
         id: "charge",
         label: "蓄力冲撞",
         meta: "24 clips",
