@@ -207,22 +207,42 @@ def decode_tex_to_png(path: Path, dest: Path) -> None:
 def extract_spear_build(spear_zip: Path, staging: Path) -> tuple[dict[str, Any], Path]:
     """Decode the Steam swap build using the same build parser as DSTmodutils."""
     pydeps = ROOT / "temp/pydeps"
-    if str(pydeps) not in sys.path:
-        sys.path.insert(0, str(pydeps))
     tools = ROOT / "temp/tools/DSTmodutils/pyscripts"
     if str(tools) not in sys.path:
         sys.path.insert(0, str(tools))
 
-    # Import these two native extensions before DSTmodutils.  Otherwise an
-    # incomplete Pillow directory can make the later ImportError look like a
-    # missing ``compiler`` package, which hides the actual environment issue.
+    # Prefer a complete Pillow installation belonging to the active Python.
+    # The bundled temp/pydeps copy may contain a cpython-313 extension; that
+    # copy cannot be imported by Homebrew Python 3.14 even though the package
+    # directory itself is present.
     try:
         from PIL import Image  # noqa: F401
+    except ModuleNotFoundError as exc:
+        if exc.name != "PIL":
+            raise RuntimeError("当前 Python 的 Pillow 依赖没有加载成功") from exc
+        if str(pydeps) not in sys.path:
+            sys.path.insert(0, str(pydeps))
+        try:
+            from PIL import Image  # noqa: F401
+        except ImportError as inner:
+            raise RuntimeError(
+                "动画素材解码依赖没有加载成功。请确认 temp/pydeps/PIL/_imaging "
+                "与当前 Python 版本匹配。"
+            ) from inner
+    except ImportError as exc:
+        raise RuntimeError("当前 Python 的 Pillow 原生模块无法加载") from exc
+
+    # texture2ddecoder is shipped in temp/pydeps as an abi3 extension.  Add
+    # that directory after Pillow has been imported so it cannot shadow a
+    # working system Pillow package.
+    if str(pydeps) not in sys.path:
+        sys.path.append(str(pydeps))
+    try:
         import texture2ddecoder  # noqa: F401
     except ImportError as exc:
         raise RuntimeError(
-            "动画素材解码依赖没有加载成功。请确认 temp/pydeps/PIL/_imaging "
-            "和 temp/pydeps/texture2ddecoder 存在，并使用与这些 .so 匹配的 Python 版本。"
+            "动画素材解码依赖没有加载成功。请确认 temp/pydeps/texture2ddecoder "
+            "存在，并且当前 Python 支持 abi3 扩展。"
         ) from exc
     try:
         import compiler.anim_build as anim_build
