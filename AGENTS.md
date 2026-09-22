@@ -15,3 +15,10 @@
 - **StateGraph**：决定何时进入状态、播放哪个片段以及何时结算逻辑。
 
 实现或排查骑乘动作时，先确认目标动作属于哪个 bank，再分别检查服务器逻辑状态、客户端状态图和可见 `AnimState`；不要把牛实体的 `beefalo` 动画状态等同于骑乘组合体已经显示。
+
+## 独立验证边界
+
+- `anim.bin` 可以脱离 DST 解析和预览；资源层检查应先确认 bank、动作名、帧数和帧率。
+- 一个 zip 往往只是同名 bank 的追加分片。看到 `wilsonbeefalo.zip` 中没有 `bellow`，不能推断原版 bank 没有 `bellow`。
+- 预览工具需要匹配的 `build.bin` 和贴图。不要拿其他生物的 build 代替 beefalo build 来判断骑乘组合体是否正确。
+- 独立预览只能证明资源帧存在；RPC、StateGraph、挂载主体和联机同步仍要在 DST 中验证。
