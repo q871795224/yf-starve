@@ -62,7 +62,11 @@
     .rail { border-right: 1px solid var(--line); padding: 21px 16px; }
     .inspector { border-left: 1px solid var(--line); padding: 21px 17px; }
     .section-label { margin: 0 0 11px; color: var(--faint); font: 700 10px/1.1 "SFMono-Regular", Consolas, monospace; letter-spacing: .15em; text-transform: uppercase; }
-    .preset-list { display: grid; gap: 8px; }
+    .preset-list { display: grid; gap: 16px; }
+    .preset-group { display: grid; gap: 7px; }
+    .preset-group-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 4px 3px; }
+    .preset-group-name { color: var(--mint); font-size: 15px; }
+    .preset-group-meta { color: var(--faint); font: 10px "SFMono-Regular", Consolas, monospace; text-align: right; }
     .preset { width: 100%; padding: 12px 12px 13px; text-align: left; border: 1px solid transparent; border-radius: 11px; background: transparent; transition: .18s ease; }
     .preset:hover { border-color: rgba(216, 120, 69, .35); background: rgba(216, 120, 69, .08); }
     .preset.active { border-color: rgba(240, 161, 104, .66); background: linear-gradient(135deg, rgba(216, 120, 69, .19), rgba(216, 120, 69, .05)); }
@@ -77,8 +81,10 @@
     .field { display: grid; gap: 4px; }
     .field label { color: var(--faint); font: 10px "SFMono-Regular", Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
     select, .text-field { min-width: 145px; padding: 9px 30px 9px 10px; border: 1px solid var(--line); border-radius: 8px; outline: none; background: var(--panel-strong); }
+    .readout { min-width: 180px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--panel-strong); font: 12px "SFMono-Regular", Consolas, monospace; }
     select:focus, .text-field:focus { border-color: var(--orange); }
     .bank-field { margin-left: auto; }
+    .mode-field select { min-width: 126px; }
     .stage-wrap { position: relative; min-height: 450px; padding: 18px; overflow: hidden; }
     .stage {
       position: absolute;
@@ -161,27 +167,35 @@
 
     <section class="workspace" aria-label="动画浏览器">
       <aside class="rail">
-        <p class="section-label">可视预览</p>
+        <p class="section-label">可视预览 · 5 组</p>
         <div id="presetList" class="preset-list"></div>
         <div class="rail-note">
-          <strong>提示</strong><br>
-          参考 bank 的分片目录仍可用 `catalog_anim_banks.py` 查询。这里优先展示已经具备 build、贴图和动画的组合。
+          <strong>三层关系</strong><br>
+          外观 / Build → 动作资源集 → 具体动作 Clip。这里的 5 个按钮是动作资源集，不是 5 头牛；同一外观下可以有多个资源集。
         </div>
       </aside>
 
       <section class="viewer">
         <div class="viewer-toolbar">
           <div class="field">
-            <label for="bankSelect">Bank</label>
-            <select id="bankSelect" aria-label="选择动画 bank"></select>
+            <label>外观 / Bank</label>
+            <div id="bankDisplay" class="readout">—</div>
           </div>
           <div class="field">
-            <label for="animSelect">Animation</label>
+            <label for="animSelect">具体动作 / Clip</label>
             <select id="animSelect" aria-label="选择动画"></select>
+          </div>
+          <div class="field mode-field">
+            <label for="playMode">Playback</label>
+            <select id="playMode" aria-label="播放模式">
+              <option value="once" selected>单次</option>
+              <option value="loop">循环</option>
+              <option value="rest">循环 · 间隔 0.5s</option>
+            </select>
           </div>
           <div class="field bank-field">
             <label for="scaleRange">Scale</label>
-          <input id="scaleRange" type="range" min="0.2" max="1.7" step="0.05" value="1" aria-label="预览缩放">
+            <input id="scaleRange" type="range" min="0.2" max="1.7" step="0.05" value="1" aria-label="预览缩放">
           </div>
         </div>
 
@@ -196,13 +210,13 @@
         <div class="timeline">
           <div class="transport">
             <button id="prevButton" type="button" title="上一帧">←</button>
-            <button id="playButton" class="primary" type="button">播放</button>
+            <button id="playButton" class="primary" type="button">播放一次</button>
             <button id="nextButton" type="button" title="下一帧">→</button>
             <div id="frameReadout" class="frame-readout">帧 0 / 0</div>
           </div>
           <div class="timeline-row">
             <input id="frameRange" type="range" min="0" max="0" value="0" aria-label="动画帧">
-            <label class="speed">速度 <input id="speedRange" type="range" min="0.25" max="2" step="0.25" value="1"><span id="speedText">1×</span></label>
+            <label class="speed">速度 <input id="speedRange" type="range" min="0.25" max="2" step="0.25" value="0.5"><span id="speedText">0.5×</span></label>
           </div>
         </div>
       </section>
@@ -214,7 +228,9 @@
           <div class="stat"><span>动作</span><strong id="animValue">—</strong></div>
           <div class="stat"><span>帧率</span><strong id="fpsValue">—</strong></div>
           <div class="stat"><span>总帧数</span><strong id="framesValue">—</strong></div>
+          <div class="stat"><span>组内动作</span><strong id="clipCountValue">—</strong></div>
           <div class="stat"><span>阶段</span><strong id="phaseValue">—</strong></div>
+          <div class="stat"><span>外观 build</span><strong id="buildValue">—</strong></div>
         </div>
         <div class="clip-notes">
           <p class="section-label">实现提示</p>
@@ -231,56 +247,76 @@
       {
         id: "mount",
         label: "骑手装具",
-        meta: "wilsonbeefalo · 2 clips",
+        meta: "2 clips",
+        appearanceId: "beefalo",
+        appearanceLabel: "普通牛 / Beefalo",
+        appearanceMeta: "wilsonbeefalo · beefalo build",
         anim: "/temp/animation-lab/player_mount_shoes/anim.json",
         build: "/temp/animation-lab/player_mount_shoes/build.json",
         images: "/temp/animation-lab/player_mount_shoes/images/",
         defaultBank: "wilsonbeefalo",
         defaultAnim: "mount_shoes",
+        buildLabel: "beefalo / rider",
         notes: ["完整骑手与 beefalo build", "适合检查上下牛的组合姿态", "来源：BetterBeefalo 参考资源"]
       },
       {
         id: "charge",
         label: "蓄力冲撞",
-        meta: "wilsonbeefalo · 24 clips",
+        meta: "24 clips",
+        appearanceId: "beefalo",
+        appearanceLabel: "普通牛 / Beefalo",
+        appearanceMeta: "wilsonbeefalo · beefalo build",
         anim: "/temp/animation-lab/wilsonbeefalo/anim.json",
         build: "/temp/animation-lab/player_mount_shoes/build.json",
         images: "/temp/animation-lab/player_mount_shoes/images/",
         defaultBank: "wilsonbeefalo",
         defaultAnim: "lancecharge_pre_side",
+        buildLabel: "beefalo / rider",
         notes: ["目标 bank 的自定义 lancecharge 片段", "优先串联 pre → loop → pst", "当前 build 是骑手装具参考 build"]
       },
       {
         id: "bellow",
-        label: "牛动作参考",
-        meta: "wilsongrassbeef_15 · 23 clips",
+        label: "基础与战斗动作",
+        meta: "23 clips",
+        appearanceId: "grass-gator",
+        appearanceLabel: "水草牛 / Grass Gator",
+        appearanceMeta: "wilsongrassbeef · gator build",
         anim: "/temp/animation-lab/banks/wilsongrassbeef_15/anim.json",
         build: "/temp/animation-lab/bellow_preview/build.json",
         images: "/temp/animation-lab/bellow_preview/images/",
         defaultBank: "wilsongrassbeef",
         defaultAnim: "bellow",
+        buildLabel: "grass gator / rider（参考）",
         notes: ["包含 bellow、atk、graze、alert、taunt 等动作", "当前使用 gator build 作为独立预览", "最终要换成目标 beefalo build"]
       },
       {
         id: "mount-supply",
-        label: "骑乘与补给",
-        meta: "wilsongrassbeef_16 · 15 clips",
+        label: "骑乘与补给动作",
+        meta: "15 clips",
+        appearanceId: "grass-gator",
+        appearanceLabel: "水草牛 / Grass Gator",
+        appearanceMeta: "wilsongrassbeef · gator build",
         anim: "/temp/animation-lab/banks/wilsongrassbeef_16/anim.json",
         build: "/temp/animation-lab/bellow_preview/build.json",
         images: "/temp/animation-lab/bellow_preview/images/",
         defaultBank: "wilsongrassbeef",
         defaultAnim: "mount",
+        buildLabel: "grass gator / rider（参考）",
         notes: ["包含 mount、dismount、buck、eat 等动作", "适合检查骑乘反馈和补给机制", "当前 build 仍是参考 gator 外观"]
       },
       {
         id: "movement",
-        label: "移动片段",
-        meta: "wilsongrassbeef_6 · 18 clips",
+        label: "移动动作",
+        meta: "18 clips",
+        appearanceId: "grass-gator",
+        appearanceLabel: "水草牛 / Grass Gator",
+        appearanceMeta: "wilsongrassbeef · gator build",
         anim: "/temp/animation-lab/banks/wilsongrassbeef_6/anim.json",
         build: "/temp/animation-lab/bellow_preview/build.json",
         images: "/temp/animation-lab/bellow_preview/images/",
         defaultBank: "wilsongrassbeef",
         defaultAnim: "run_loop_side",
+        buildLabel: "grass gator / rider（参考）",
         notes: ["包含 run_pre、run_loop、run_pst 方向版本", "适合冲撞和犁地的动作筛选", "当前 build 仍是参考 gator 外观"]
       }
     ];
@@ -294,10 +330,14 @@
       frame: 0,
       playing: false,
       timer: null,
-      speed: 1,
+      speed: 0.5,
+      playMode: "once",
       scale: 1,
       origin: { x: 0, y: 0 },
       autoFit: true,
+      fitPending: true,
+      loadSerial: 0,
+      viewByAppearance: new Map(),
       imageById: new Map(),
       symbolByName: new Map()
     };
@@ -385,7 +425,7 @@
         img.style.display = "block";
       }
       $("frameRange").value = String(state.frame);
-      $("frameReadout").textContent = `帧 ${state.frame + 1} / ${clip.numframes}`;
+      $("frameReadout").textContent = `帧 ${state.frame + 1} / ${clip.numframes} · ${(clip.numframes / clip.framerate).toFixed(2)}s`;
       $("emptyState").hidden = [...state.imageById.values()].some((img) => img.style.display === "block");
     }
 
@@ -423,6 +463,7 @@
         y: stage.height / 2 - (contentCenter.y - stageCenter.y) * state.scale
       };
       applyView();
+      if (state.preset) state.viewByAppearance.set(state.preset.appearanceId, { scale: state.scale, origin: { ...state.origin } });
     }
 
     function phaseName(name) {
@@ -435,11 +476,14 @@
 
     function updateInspector() {
       const clip = currentClip();
+      $("bankDisplay").textContent = state.preset ? `${state.preset.appearanceLabel} · ${state.bank}` : "—";
       $("bankValue").textContent = state.bank || "—";
       $("animValue").textContent = state.animation || "—";
       $("fpsValue").textContent = clip ? `${clip.framerate} FPS` : "—";
       $("framesValue").textContent = clip ? String(clip.numframes) : "—";
+      $("clipCountValue").textContent = state.animData?.banks?.[state.bank] ? `${Object.keys(state.animData.banks[state.bank]).length} 个` : "—";
       $("phaseValue").textContent = clip ? phaseName(state.animation) : "—";
+      $("buildValue").textContent = state.preset?.buildLabel || "—";
       $("sourceCaption").textContent = state.preset ? `${state.preset.label} / ${state.animation}` : "—";
       const notes = $("clipNotes");
       notes.replaceChildren();
@@ -451,21 +495,18 @@
     }
 
     function populateBanks() {
-      const select = $("bankSelect");
-      select.replaceChildren();
-      for (const bank of Object.keys(state.animData.banks || {})) {
-        const option = new Option(bank, bank);
-        select.appendChild(option);
+      if (!state.animData.banks?.[state.bank]) {
+        state.bank = Object.keys(state.animData.banks || {})[0] || "";
       }
-      select.value = state.bank;
       populateAnimations();
     }
 
     function populateAnimations() {
       const select = $("animSelect");
       select.replaceChildren();
-      for (const name of Object.keys(state.animData.banks?.[state.bank] || {})) {
-        const option = new Option(name, name);
+      for (const [name, clip] of Object.entries(state.animData.banks?.[state.bank] || {})) {
+        const duration = (clip.numframes / clip.framerate).toFixed(2);
+        const option = new Option(`${name} · ${clip.numframes}f · ${duration}s`, name);
         select.appendChild(option);
       }
       if (!state.animData.banks?.[state.bank]?.[state.animation]) {
@@ -476,23 +517,54 @@
     }
 
     async function loadClip() {
+      const serial = ++state.loadSerial;
+      const shouldFit = state.fitPending;
+      state.fitPending = false;
       stop();
       const clip = currentClip();
       if (!clip) return;
       prepareImages(clip);
       $("frameRange").max = String(Math.max(0, clip.numframes - 1));
       renderFrame(0);
-      await fitToStage();
+      if (shouldFit) await fitToStage();
+      if (serial !== state.loadSerial) return;
+      if (shouldFit) {
+        state.viewByAppearance.set(state.preset.appearanceId, { scale: state.scale, origin: { ...state.origin } });
+      } else if (state.viewByAppearance.has(state.preset.appearanceId)) {
+        const view = state.viewByAppearance.get(state.preset.appearanceId);
+        state.scale = view.scale;
+        state.origin = { ...view.origin };
+        applyView();
+      }
       updateInspector();
-      start();
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      $("playButton").textContent = state.playing ? "暂停" : (state.playMode === "once" ? "播放一次" : "播放");
     }
 
     function start() {
       const clip = currentClip();
       if (!clip || state.playing) return;
+      if (state.playMode === "once" && state.frame >= clip.numframes - 1) renderFrame(0);
       state.playing = true;
-      $("playButton").textContent = "暂停";
+      updatePlayButton();
       const tick = () => {
+        if (!state.playing) return;
+        if (state.frame >= clip.numframes - 1) {
+          if (state.playMode === "once") {
+            stop();
+            return;
+          }
+          const pause = state.playMode === "rest" ? 500 : 0;
+          state.timer = window.setTimeout(() => {
+            if (!state.playing) return;
+            renderFrame(0);
+            tick();
+          }, pause);
+          return;
+        }
         state.timer = window.setTimeout(() => {
           renderFrame(state.frame + 1);
           tick();
@@ -505,7 +577,7 @@
       state.playing = false;
       if (state.timer) window.clearTimeout(state.timer);
       state.timer = null;
-      $("playButton").textContent = "播放";
+      updatePlayButton();
     }
 
     function togglePlayback() { state.playing ? stop() : start(); }
@@ -516,7 +588,13 @@
       if (!preset) return;
       stop();
       state.preset = preset;
-      state.autoFit = true;
+      const savedView = state.viewByAppearance.get(preset.appearanceId);
+      state.autoFit = !savedView;
+      state.fitPending = !savedView;
+      if (savedView) {
+        state.scale = savedView.scale;
+        state.origin = { ...savedView.origin };
+      }
       document.querySelectorAll(".preset").forEach((item) => item.classList.toggle("active", item.dataset.id === id));
       setStatus(`载入 ${preset.label}`);
       try {
@@ -540,23 +618,48 @@
 
     function renderPresetList() {
       const list = $("presetList");
+      const groups = new Map();
       for (const preset of PRESETS) {
+        if (!groups.has(preset.appearanceId)) {
+          const group = document.createElement("section");
+          group.className = "preset-group";
+          const heading = document.createElement("div");
+          heading.className = "preset-group-heading";
+          const name = document.createElement("span");
+          name.className = "preset-group-name";
+          name.textContent = preset.appearanceLabel;
+          const meta = document.createElement("span");
+          meta.className = "preset-group-meta";
+          meta.textContent = preset.appearanceMeta;
+          heading.append(name, meta);
+          group.appendChild(heading);
+          list.appendChild(group);
+          groups.set(preset.appearanceId, group);
+        }
         const button = document.createElement("button");
         button.type = "button";
         button.className = "preset";
         button.dataset.id = preset.id;
-        button.innerHTML = `<span class="preset-mark">↗</span><span class="preset-name">${preset.label}</span><span class="preset-meta">${preset.meta}</span>`;
+        const mark = document.createElement("span");
+        mark.className = "preset-mark";
+        mark.textContent = "↗";
+        const label = document.createElement("span");
+        label.className = "preset-name";
+        label.textContent = preset.label;
+        const meta = document.createElement("span");
+        meta.className = "preset-meta";
+        meta.textContent = preset.meta;
+        button.append(mark, label, meta);
         button.addEventListener("click", () => loadPreset(preset.id));
-        list.appendChild(button);
+        groups.get(preset.appearanceId).appendChild(button);
       }
     }
 
-    $("bankSelect").addEventListener("change", (event) => {
-      state.bank = event.target.value;
-      state.animation = "";
-      populateAnimations();
-    });
     $("animSelect").addEventListener("change", (event) => { state.animation = event.target.value; loadClip(); });
+    $("playMode").addEventListener("change", (event) => {
+      state.playMode = event.target.value;
+      updatePlayButton();
+    });
     $("playButton").addEventListener("click", togglePlayback);
     $("prevButton").addEventListener("click", () => step(-1));
     $("nextButton").addEventListener("click", () => step(1));
@@ -565,6 +668,7 @@
       state.autoFit = false;
       state.scale = Number(event.target.value);
       applyView();
+      if (state.preset) state.viewByAppearance.set(state.preset.appearanceId, { scale: state.scale, origin: { ...state.origin } });
     });
     $("speedRange").addEventListener("input", (event) => {
       state.speed = Number(event.target.value);

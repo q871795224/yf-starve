@@ -51,19 +51,19 @@ python3 tools/catalog_anim_banks.py --contains mount
 python3 tools/serve_animation_lab.py
 ```
 
-浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“骑手装具”预览，并提供五个入口：
+浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“骑手装具”预览。页面按三层关系组织资源：**外观 / Build → 动作资源集 → 具体动作 Clip**。当前有两个已经具备完整可视 build 的外观组和五个动作资源集：
 
-| 预览 | 内容 | 重点动作 |
+| 外观 / 动作资源集 | 内容 | 重点动作 |
 | --- | --- | --- |
-| 骑手装具 | 完整 rider + beefalo build | `wilsonbeefalo / mount_shoes`、`dismount_shoes` |
-| 蓄力冲撞 | `wilsonbeefalo` 动作配合 beefalo build | `lancecharge_pre/loop/pst_*` |
-| 牛动作参考 | 参考模组的 gator build | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |
-| 骑乘与补给 | 参考模组的 gator build | `mount`、`dismount`、`buck`、`eat_*` |
-| 移动片段 | 参考模组的 gator build | `run_pre/loop/pst_*` |
+| 普通牛 / Beefalo → 骑手装具 | 完整 rider + beefalo build，2 个 Clip | `mount_shoes`、`dismount_shoes` |
+| 普通牛 / Beefalo → 蓄力冲撞 | `wilsonbeefalo`，24 个 Clip | `lancecharge_pre/loop/pst_*` |
+| 水草牛 / Grass Gator → 基础与战斗 | gator build，23 个 Clip | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |
+| 水草牛 / Grass Gator → 骑乘与补给 | gator build，15 个 Clip | `mount`、`dismount`、`buck`、`eat_*` |
+| 水草牛 / Grass Gator → 移动 | gator build，18 个 Clip | `run_pre/loop/pst_*` |
 
-页面左侧切换预览，中间下拉框切换 bank 和动作，底部可以播放、暂停、逐帧和调速，右侧显示帧数、帧率和阶段。页面按动画边界自动缩放，滑动 Scale 可以查看局部细节。快捷键是空格播放/暂停、左右方向键逐帧。退出服务按 `Ctrl-C`。
+左侧第一层是外观组，下面的按钮是动作资源集；中间的 Bank 是该资源集固定使用的动画身份，具体动作在 Clip 下拉框中选择，选项会显示帧数和总时长。默认播放模式是单次、0.5 倍速；也可以切换循环或每次循环间隔 0.5 秒。页面按外观固定镜头缩放，切换同一头牛的动作不会重新放大。快捷键是空格播放/暂停、左右方向键逐帧。退出服务按 `Ctrl-C`。
 
-牛动作、骑乘补给和移动预览使用参考模组的 gator build，只用于确认动画帧会改变骑乘组合体；最终牛外观仍要替换成目标 beefalo build。
+水草牛的动作预览使用参考模组的 gator build，所以它与普通 Beefalo 是两种外观/坐骑资源。它用于确认动作帧和 StateGraph 组合方式；最终牛外观仍要按目标坐骑选择匹配 build。`wilsongrassbeef_water` 还有水中动作分片，但当前没有单独的完整水中 build 预览，因此仍由目录命令查看元数据。
 
 ## 游戏层验证
 
