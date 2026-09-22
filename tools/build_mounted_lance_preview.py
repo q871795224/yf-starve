@@ -77,14 +77,14 @@ def around_point(x: float, y: float, degrees: float) -> list[float]:
     return multiply(translate, multiply(rotation, inverse(translate)))
 
 
-def transform_point(transform: list[float], point: tuple[float, float]) -> tuple[float, float]:
-    return (
-        transform[0] * point[0] + transform[2] * point[1] + transform[4],
-        transform[1] * point[0] + transform[3] * point[1] + transform[5],
-    )
+PRIMARY_HAND_Z = 39
+SUPPORT_HAND_Z = 34
+PRIMARY_ARM_Z = (39, 40, 41, 42, 43)
+SUPPORT_ARM_Z = (34, 35, 36, 37, 38)
+GRIP_HAND_FRONT_Z = 1
 
 
-def spear_matrix(degrees: float, width_scale: float = 1.05, length_scale: float = 1.42) -> list[float]:
+def spear_matrix(degrees: float, width_scale: float = 1.0, length_scale: float = 1.0) -> list[float]:
     radians = math.radians(degrees)
     return [
         width_scale * math.cos(radians),
@@ -103,26 +103,95 @@ def find_element(frame: dict[str, Any], name: str, z_index: int) -> dict[str, An
     raise ValueError(f"{name!r} at z={z_index} is missing from a source frame")
 
 
-def add_rider_lean(frame: dict[str, Any], degrees: float) -> tuple[float, float]:
+def element_point(element: dict[str, Any]) -> tuple[float, float]:
+    return float(element["m_tx"]), float(element["m_ty"])
+
+
+def tip_axis(degrees: float) -> tuple[float, float]:
+    radians = math.radians(degrees)
+    # The spear build is vertical in its local image: its tip is at -Y.
+    return math.sin(radians), -math.cos(radians)
+
+
+def angle_of(vector: tuple[float, float]) -> float:
+    return math.degrees(math.atan2(vector[1], vector[0]))
+
+
+def rotate_elements(frame: dict[str, Any], z_indices: tuple[int, ...], pivot: tuple[float, float], degrees: float) -> None:
+    if abs(degrees) < 1e-5:
+        return
+    transform = around_point(pivot[0], pivot[1], degrees)
+    for element in frame["elements"]:
+        if element.get("z_index") in z_indices:
+            element.update(dict(zip(MATRIX_KEYS, multiply(transform, matrix(element)))))
+
+
+def add_rider_lean(frame: dict[str, Any], degrees: float) -> None:
     pelvis = find_element(frame, "torso_pelvis", 22)
     lean = around_point(float(pelvis["m_tx"]), float(pelvis["m_ty"]), degrees)
-    old_weapon = find_element(frame, "swap_object", 44)
-    old_weapon_point = transform_point(lean, (float(old_weapon["m_tx"]), float(old_weapon["m_ty"])))
 
     for element in frame["elements"]:
         if element.get("z_index") in RIDER_Z:
             element.update(dict(zip(MATRIX_KEYS, multiply(lean, matrix(element)))))
-    return old_weapon_point
+
+
+def align_primary_grip(frame: dict[str, Any], angle: float) -> None:
+    """Turn the weapon arm toward the lance while keeping its hand in place."""
+    hand = find_element(frame, "hand", PRIMARY_HAND_Z)
+    forearm = find_element(frame, "arm_lower", 43)
+    hand_point = element_point(hand)
+    current_axis = angle_of((hand_point[0] - float(forearm["m_tx"]), hand_point[1] - float(forearm["m_ty"])))
+    desired_axis = angle - 90.0
+    delta = max(-55.0, min(55.0, desired_axis - current_axis))
+    rotate_elements(frame, PRIMARY_ARM_Z, hand_point, delta)
+
+
+def align_support_grip(frame: dict[str, Any], anchor: tuple[float, float], angle: float) -> None:
+    """Place the second hand on the same lance line without stretching the arm."""
+    shoulder = find_element(frame, "arm_upper", 35)
+    hand = find_element(frame, "hand", SUPPORT_HAND_Z)
+    shoulder_point = element_point(shoulder)
+    hand_point = element_point(hand)
+    arm_vector = (hand_point[0] - shoulder_point[0], hand_point[1] - shoulder_point[1])
+    arm_length = math.hypot(*arm_vector)
+    if arm_length < 1e-5:
+        return
+
+    axis = tip_axis(angle)
+    shoulder_to_anchor = (anchor[0] - shoulder_point[0], anchor[1] - shoulder_point[1])
+    projection = shoulder_to_anchor[0] * axis[0] + shoulder_to_anchor[1] * axis[1]
+    perpendicular_sq = (
+        shoulder_to_anchor[0] ** 2 + shoulder_to_anchor[1] ** 2 - projection ** 2
+    )
+    discriminant = arm_length ** 2 - perpendicular_sq
+    if discriminant < 0:
+        return
+
+    # The support hand sits behind the primary hand along the shaft.  Choose
+    # the negative root so the arm does not cross past the forward hand.
+    distance = -projection - math.sqrt(max(0.0, discriminant))
+    target = (anchor[0] + distance * axis[0], anchor[1] + distance * axis[1])
+    current_angle = angle_of(arm_vector)
+    target_angle = angle_of((target[0] - shoulder_point[0], target[1] - shoulder_point[1]))
+    rotate_elements(frame, SUPPORT_ARM_Z, shoulder_point, target_angle - current_angle)
+
+
+def bring_grip_hands_forward(frame: dict[str, Any]) -> None:
+    """Render the two grip hands above the weapon so the contact reads clearly."""
+    for source_z in (SUPPORT_HAND_Z, PRIMARY_HAND_Z):
+        source = find_element(frame, "hand", source_z)
+        hand = copy.deepcopy(source)
+        hand["z_index"] = GRIP_HAND_FRONT_Z
+        frame["elements"].append(hand)
 
 
 def replace_with_spear(
     frame: dict[str, Any],
-    lean_point: tuple[float, float],
-    thrust: float,
+    anchor: tuple[float, float],
     angle: float,
     z_index: int = 2,
-    width_scale: float = 1.05,
-    length_scale: float = 1.42,
+    width_scale: float = 1.0,
+    length_scale: float = 1.0,
 ) -> None:
     elements = []
     for element in frame["elements"]:
@@ -138,8 +207,10 @@ def replace_with_spear(
         # being drawn twice.
         spear["z_index"] = z_index
         spear.update(dict(zip(MATRIX_KEYS, spear_matrix(angle, width_scale, length_scale))))
-        spear["m_tx"] = lean_point[0] + thrust
-        spear["m_ty"] = lean_point[1]
+        # Keep the local origin at the primary hand.  Translating the weapon
+        # independently makes it visibly detach from both hands during the
+        # attack; the upward thrust is expressed by the arm and angle instead.
+        spear["m_tx"], spear["m_ty"] = anchor
         elements.append(spear)
     frame["elements"] = elements
 
@@ -152,38 +223,38 @@ def progress_values(count: int, values: list[float]) -> list[float]:
 
 def make_frames(
     bank: dict[str, Any],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     idle = [copy.deepcopy(frame) for frame in bank["idle_loop"]["frames"][:3]]
-    transition = [copy.deepcopy(bank["atk_pre_side"]["frames"][0]) for _ in range(2)]
     pre = [copy.deepcopy(frame) for frame in bank["atk_pre_side"]["frames"]]
     attack = [copy.deepcopy(frame) for frame in bank["atk_side"]["frames"]]
 
-    transition_progress = [0.0, 1.0]
     pre_lean = progress_values(len(pre), [0, 5, 10, 15, 20, 24])
     attack_lean = progress_values(len(attack), [26, 30, 30, 28, 24, 20, 16, 12, 8, 4, 0, 0, 0, 0, 0, 0, 0])
-    attack_thrust = [0, 8, 18, 28, 38, 42, 38, 32, 25, 18, 12, 7, 3, 0, 0, 0, 0]
+    pre_angles = [0, 4, 8, 12, 16, 20]
+    attack_angles = [20, 17, 14, 11, 8, 5, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     for frame in idle:
-        point = add_rider_lean(frame, 0)
-        replace_with_spear(frame, point, thrust=0, angle=18, z_index=2, width_scale=1.0, length_scale=1.15)
-    for frame, progress in zip(transition, transition_progress):
-        point = add_rider_lean(frame, 0)
-        replace_with_spear(
-            frame,
-            point,
-            thrust=0,
-            angle=18 + 10 * progress,
-            z_index=2,
-            width_scale=1.0 + 0.05 * progress,
-            length_scale=1.15 + 0.20 * progress,
-        )
-    for frame, lean in zip(pre, pre_lean):
-        point = add_rider_lean(frame, lean)
-        replace_with_spear(frame, point, thrust=0, angle=38 + lean * 3)
-    for frame, lean, thrust in zip(attack, attack_lean, attack_thrust):
-        point = add_rider_lean(frame, lean)
-        replace_with_spear(frame, point, thrust=thrust, angle=110 + min(12, thrust / 3.5))
-    return idle, transition, pre, attack
+        add_rider_lean(frame, 0)
+        anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
+        align_primary_grip(frame, 0)
+        align_support_grip(frame, anchor, 0)
+        replace_with_spear(frame, anchor, angle=0, z_index=2)
+        bring_grip_hands_forward(frame)
+    for frame, lean, angle in zip(pre, pre_lean, pre_angles):
+        add_rider_lean(frame, lean)
+        anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
+        align_primary_grip(frame, angle)
+        align_support_grip(frame, anchor, angle)
+        replace_with_spear(frame, anchor, angle=angle, z_index=2)
+        bring_grip_hands_forward(frame)
+    for frame, lean, angle in zip(attack, attack_lean, attack_angles):
+        add_rider_lean(frame, lean)
+        anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
+        align_primary_grip(frame, angle)
+        align_support_grip(frame, anchor, angle)
+        replace_with_spear(frame, anchor, angle=angle, z_index=2)
+        bring_grip_hands_forward(frame)
+    return idle, pre, attack
 
 
 def decode_tex_to_png(path: Path, dest: Path) -> None:
@@ -288,9 +359,8 @@ def build(input_anim: Path, input_build: Path, spear_zip: Path, output: Path) ->
     animation = json.loads(input_anim.read_text())
     build_data = json.loads(input_build.read_text())
     bank = animation["banks"]["wilsonbeefalo"]
-    idle, transition, pre, attack = make_frames(bank)
+    idle, pre, attack = make_frames(bank)
     bank["yf_mounted_lancejab_idle_side"] = {"framerate": 30, "numframes": len(idle), "frames": idle}
-    bank["yf_mounted_lancejab_transition_side"] = {"framerate": 30, "numframes": len(transition), "frames": transition}
     bank["yf_mounted_lancejab_pre_side"] = {"framerate": 30, "numframes": len(pre), "frames": pre}
     bank["yf_mounted_lancejab_side"] = {"framerate": 30, "numframes": len(attack), "frames": attack}
 
@@ -304,8 +374,8 @@ def build(input_anim: Path, input_build: Path, spear_zip: Path, output: Path) ->
 
     (output / "anim.json").write_text(json.dumps(animation, ensure_ascii=False, separators=(",", ":")))
     (output / "build.json").write_text(json.dumps(build_data, ensure_ascii=False, separators=(",", ":")))
-    trigger_frames = len(transition) + len(pre) + len(attack)
-    core_attack_frames = len(pre) + len(attack)
+    trigger_frames = len(pre) + len(attack)
+    core_attack_frames = trigger_frames
     print(
         f"wrote {output / 'anim.json'} "
         f"({len(idle) + trigger_frames} preview frames; trigger {trigger_frames} frames; "

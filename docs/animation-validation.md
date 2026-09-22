@@ -61,14 +61,14 @@ python3 tools/build_mounted_attack_preview.py
 python3 tools/build_mounted_lance_preview.py
 ```
 
-它从 Steam depot 的 `swap_spear_lance.zip` 解出正式长枪贴图和 build，把官方 `atk_pre_side` / `atk_side` 作为牛的运动底稿，再在目标空间里做三件事：
+它从 Steam depot 的 `swap_spear_lance.zip` 解出正式长枪贴图和 build，把官方 `atk_pre_side` / `atk_side` 作为牛的运动底稿，再在目标空间里处理以下几点：
 
-- 开头先放 3 帧 `idle_loop`，再放 2 帧提枪过渡；组合的第一帧是常态，持枪姿态会逐步转入 `atk_pre`，不会突然跳变；
-- `atk_pre_side` 的 6 帧和 `atk_side` 的 17 帧原样保留，核心攻击段仍是 23 帧（30 FPS 下约 0.77 秒）；完整触发段为 2 + 6 + 17 = 25 帧，只比原版多 2 帧；
-- 骑手围绕 `torso_pelvis` 做最高约 30° 的前倾，牛的顶撞仍沿用官方动作；
-- 把长枪沿枪身方向加长，放到 z=2，压到牛头的 z=3..9 之前，并在攻击段做右下斜刺，保证武器轮廓和力量感可读。
+- 开头先放 3 帧 `idle_loop`，攻击组合直接使用官方 `atk_pre_side` 的 6 帧和 `atk_side` 的 17 帧；实际攻击段严格保持 23 帧（30 FPS 下约 0.77 秒）；
+- 枪保持 Steam 原始素材尺寸，避免放大造成模糊；武器原点固定在骑手主手，攻击过程中不再独立平移枪身；
+- 两只手沿枪身轴线重新对齐，并把握枪手部放到枪层之前，使枪和人物的连接更清楚；
+- 骑手围绕 `torso_pelvis` 做最高约 30° 的前倾，枪尖从斜上方逐步收拢到向上戳击方向，与牛的顶撞动作一致；
 
-页面的“自制骑枪刺击原型”有“常态 → 提枪 → 准备 → 骑枪刺击”和“提枪 → 准备 → 骑枪刺击”两个组合。`player_lancejab` 的官方动作只用于参考刺击节奏，不能把它的绝对坐标直接复制到 `wilsonbeefalo`；生成结果仍是离线预览，输出位于 `temp/animation-lab/mounted-lance-prototype/`。
+页面的“自制骑枪刺击原型”有“常态 → 准备 → 向上骑枪刺击”和“准备 → 向上骑枪刺击”两个组合。`player_lancejab` 的官方动作只用于参考刺击节奏，不能把它的绝对坐标直接复制到 `wilsonbeefalo`；生成结果仍是离线预览，输出位于 `temp/animation-lab/mounted-lance-prototype/`。
 
 项目内置了一个整理过布局的浏览器，不需要拖文件或手动填写贴图路径。启动服务：
 
@@ -82,7 +82,7 @@ python3 tools/serve_animation_lab.py
 | --- | --- | --- |
 | 官方 Beefalo / 骑手 → 官方骑乘动作 | Steam depot 的 `wilsonbeefalo`，331 个 Clip | `bellow`、`mount`、`dismount`、`heavy_mount`、`atk_*` |
 | 官方 Beefalo / 骑手 → 自制同步攻击原型 | 基于官方 `atk_*` 的 23 帧预览 | `yf_mounted_atk_pre_side`、`yf_mounted_atk_side` |
-| 官方 Beefalo / 骑手 → 自制骑枪刺击原型 | 官方牛攻击 + Steam `swap_spear_lance`，28 帧预览；完整触发段 25 帧，核心攻击段 23 帧 | `yf_mounted_lancejab_idle_side`、`yf_mounted_lancejab_transition_side`、`yf_mounted_lancejab_pre_side`、`yf_mounted_lancejab_side` |
+| 官方 Beefalo / 骑手 → 自制骑枪刺击原型 | 官方牛攻击 + Steam `swap_spear_lance`，26 帧预览；实际攻击段严格 23 帧 | `yf_mounted_lancejab_idle_side`、`yf_mounted_lancejab_pre_side`、`yf_mounted_lancejab_side` |
 | 普通牛 / Beefalo → 骑手装具 | 完整 rider + beefalo build，2 个 Clip | `mount_shoes`、`dismount_shoes` |
 | 普通牛 / Beefalo → 蓄力冲撞 | `wilsonbeefalo`，24 个 Clip | `lancecharge_pre/loop/pst_*` |
 | 水草牛 / Grass Gator → 基础与战斗 | gator build，23 个 Clip | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |
