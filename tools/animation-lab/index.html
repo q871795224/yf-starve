@@ -254,6 +254,7 @@
         anim: "/temp/animation-lab/official-mount/anim.json",
         build: "/temp/animation-lab/official-mount/build.json",
         images: "/temp/animation-lab/official-mount/images/",
+        assetVersion: "official-mount-dxt5-flipped-20260922",
         defaultBank: "wilsonbeefalo",
         defaultAnim: "bellow",
         buildLabel: "官方 Beefalo + 鞍具 / 组合骑手 build",
@@ -384,7 +385,8 @@
     }
 
     function imagePath(name, frame) {
-      return `${state.preset.images}${encodeURIComponent(name)}/${encodeURIComponent(name)}-${frame}.png`;
+      const version = state.preset.assetVersion ? `?v=${encodeURIComponent(state.preset.assetVersion)}` : "";
+      return `${state.preset.images}${encodeURIComponent(name)}/${encodeURIComponent(name)}-${frame}.png${version}`;
     }
 
     function elementId(name, frame, ordinal) {
