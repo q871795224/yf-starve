@@ -2,8 +2,8 @@ local RPC_NAMESPACE = "yf_starve_beefalo_skill_system"
 local RPC_COMMAND = "mounted_lancejab"
 
 local LANCE_STATE = "yf_mounted_lancejab"
-local LANCE_PRE_ANIMATION = "yf_mounted_lancejab_pre_side"
-local LANCE_ANIMATION = "yf_mounted_lancejab_side"
+local LANCE_PRE_ANIMATION = "yf_mounted_lancejab_pre"
+local LANCE_ANIMATION = "yf_mounted_lancejab"
 local LANCE_DURATION = 23 * GLOBAL.FRAMES
 
 local function IsRidingBeefalo(player)

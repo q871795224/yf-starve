@@ -10,6 +10,7 @@ image/build is shipped as the small official ``swap_spear_lance`` asset.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import shutil
 import sys
@@ -30,6 +31,11 @@ ANIM_NAMES = (
     "yf_mounted_lancejab_pre_side",
     "yf_mounted_lancejab_side",
 )
+GAME_ANIM_NAMES = {
+    "yf_mounted_lancejab_idle_side": "yf_mounted_lancejab_idle",
+    "yf_mounted_lancejab_pre_side": "yf_mounted_lancejab_pre",
+    "yf_mounted_lancejab_side": "yf_mounted_lancejab",
+}
 
 
 def compile_anim(preview_anim: Path, output_zip: Path) -> None:
@@ -46,12 +52,14 @@ def compile_anim(preview_anim: Path, output_zip: Path) -> None:
     if missing:
         raise ValueError(f"preview animation JSON is missing: {', '.join(missing)}")
 
+    game_bank = {
+        GAME_ANIM_NAMES[name]: copy.deepcopy(source_bank[name])
+        for name in ANIM_NAMES
+    }
     delta = {
         "type": "Anim",
         "version": int(source.get("version", 4)),
-        "banks": {
-            "wilsonbeefalo": {name: source_bank[name] for name in ANIM_NAMES}
-        },
+        "banks": {"wilsonbeefalo": game_bank},
     }
     bank = AnimBank(delta)
     bank.json_to_bin()
