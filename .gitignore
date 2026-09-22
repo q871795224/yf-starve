@@ -9,3 +9,7 @@ Thumbs.db
 
 # Local logs
 *.log
+
+# Browser screenshots and automation traces
+/output/
+.playwright-cli/
