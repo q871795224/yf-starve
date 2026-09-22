@@ -85,6 +85,7 @@
     select:focus, .text-field:focus { border-color: var(--orange); }
     .bank-field { margin-left: auto; }
     .mode-field select { min-width: 126px; }
+    .sequence-field select { min-width: 190px; }
     .stage-wrap { position: relative; min-height: 450px; padding: 18px; overflow: hidden; }
     .stage {
       position: absolute;
@@ -185,6 +186,10 @@
             <label for="animSelect">具体动作 / Clip</label>
             <select id="animSelect" aria-label="选择动画"></select>
           </div>
+          <div class="field sequence-field">
+            <label for="sequenceSelect">组合动作</label>
+            <select id="sequenceSelect" aria-label="选择组合动作"><option value="">单个 Clip</option></select>
+          </div>
           <div class="field mode-field">
             <label for="playMode">Playback</label>
             <select id="playMode" aria-label="播放模式">
@@ -226,6 +231,7 @@
         <div class="inspector-card">
           <div class="stat"><span>bank</span><strong id="bankValue">—</strong></div>
           <div class="stat"><span>动作</span><strong id="animValue">—</strong></div>
+          <div class="stat"><span>播放组合</span><strong id="sequenceValue">单个 Clip</strong></div>
           <div class="stat"><span>帧率</span><strong id="fpsValue">—</strong></div>
           <div class="stat"><span>总帧数</span><strong id="framesValue">—</strong></div>
           <div class="stat"><span>组内动作</span><strong id="clipCountValue">—</strong></div>
@@ -258,7 +264,15 @@
         defaultBank: "wilsonbeefalo",
         defaultAnim: "bellow",
         buildLabel: "官方 Beefalo + 鞍具 / 组合骑手 build",
-        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
+        sequences: [
+          { id: "bellow", label: "战吼", clips: ["bellow"] },
+          { id: "beefalo-attack-side", label: "牛攻击 · 侧向", clips: ["atk_pre_side", "atk_side"] },
+          { id: "rider-attack-side", label: "骑手攻击 · 侧向", clips: ["player_atk_pre_side", "player_atk_lag_side", "player_atk_side"] },
+          { id: "till-side", label: "犁地 / 步行 · 侧向", clips: ["walk_pre_side", "walk_loop_side", "walk_pst_side"] },
+          { id: "graze", label: "吃草", clips: ["graze2_pre", "graze2_loop", "graze2_pst"] },
+          { id: "run-side", label: "奔跑 · 侧向", clips: ["run_pre_side", "run_loop_side", "run_pst_side"] }
+        ],
+        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "官方 atk_* 帧本身带有 player_hand / ARM_normal 图层；player_atk_* 是另一套骑手攻击片段", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
       },
       {
         id: "mount",
@@ -273,6 +287,7 @@
         defaultBank: "wilsonbeefalo",
         defaultAnim: "mount_shoes",
         buildLabel: "beefalo / rider",
+        sequences: [],
         notes: ["完整骑手与 beefalo build", "适合检查上下牛的组合姿态", "来源：BetterBeefalo 参考资源"]
       },
       {
@@ -288,7 +303,10 @@
         defaultBank: "wilsonbeefalo",
         defaultAnim: "lancecharge_pre_side",
         buildLabel: "beefalo / rider",
-        notes: ["目标 bank 的自定义 lancecharge 片段", "优先串联 pre → loop → pst", "当前 build 是骑手装具参考 build"]
+        sequences: [
+          { id: "lancecharge-side", label: "蓄力冲撞 · 侧向", clips: ["lancecharge_pre_side", "lancecharge_lag_pre_side", "lancecharge_loop_side", "lancecharge_lag_side", "lancecharge_pst_side"] }
+        ],
+        notes: ["目标 bank 的自定义 lancecharge 片段", "组合预览按 pre → lag_pre → loop → lag → pst 播放", "当前 build 是骑手装具参考 build"]
       },
       {
         id: "bellow",
@@ -303,6 +321,12 @@
         defaultBank: "wilsongrassbeef",
         defaultAnim: "bellow",
         buildLabel: "grass gator / rider（参考）",
+        sequences: [
+          { id: "bellow", label: "战吼", clips: ["bellow"] },
+          { id: "beefalo-attack-side", label: "牛攻击 · 侧向", clips: ["atk_pre_side", "atk_side"] },
+          { id: "graze", label: "吃草", clips: ["graze2_pre", "graze2_loop", "graze2_pst"] },
+          { id: "walk-graze", label: "边走边吃草", clips: ["walk_graze2_pre", "walk_graze2_loop", "walk_graze2_pst"] }
+        ],
         notes: ["包含 bellow、atk、graze、alert、taunt 等动作", "当前使用 gator build 作为独立预览", "最终要换成目标 beefalo build"]
       },
       {
@@ -318,6 +342,11 @@
         defaultBank: "wilsongrassbeef",
         defaultAnim: "mount",
         buildLabel: "grass gator / rider（参考）",
+        sequences: [
+          { id: "eat", label: "完整进食", clips: ["eat_pre", "eat_lag", "eat"] },
+          { id: "quick-eat", label: "快速进食", clips: ["quick_eat_pre", "quick_eat_lag", "quick_eat"] },
+          { id: "quick-drink", label: "快速饮水", clips: ["quick_drink_pre", "quick_drink_lag", "quick_drink"] }
+        ],
         notes: ["包含 mount、dismount、buck、eat 等动作", "适合检查骑乘反馈和补给机制", "当前 build 仍是参考 gator 外观"]
       },
       {
@@ -333,6 +362,10 @@
         defaultBank: "wilsongrassbeef",
         defaultAnim: "run_loop_side",
         buildLabel: "grass gator / rider（参考）",
+        sequences: [
+          { id: "till-side", label: "犁地 / 步行 · 侧向", clips: ["walk_pre_side", "walk_loop_side", "walk_pst_side"] },
+          { id: "run-side", label: "奔跑 · 侧向", clips: ["run_pre_side", "run_loop_side", "run_pst_side"] }
+        ],
         notes: ["包含 run_pre、run_loop、run_pst 方向版本", "适合冲撞和犁地的动作筛选", "当前 build 仍是参考 gator 外观"]
       }
     ];
@@ -343,6 +376,8 @@
       buildData: null,
       bank: "",
       animation: "",
+      sequence: null,
+      sequenceIndex: 0,
       frame: 0,
       playing: false,
       timer: null,
@@ -376,6 +411,25 @@
 
     function currentClip() {
       return state.animData?.banks?.[state.bank]?.[state.animation] || null;
+    }
+
+    function availableSequences() {
+      const clips = state.animData?.banks?.[state.bank] || {};
+      return (state.preset?.sequences || []).filter((sequence) => sequence.clips.every((name) => clips[name]));
+    }
+
+    function sequenceClip(index = state.sequenceIndex) {
+      const name = state.sequence?.clips?.[index];
+      return name ? state.animData?.banks?.[state.bank]?.[name] || null : null;
+    }
+
+    function populateSequences() {
+      const select = $("sequenceSelect");
+      select.replaceChildren(new Option("单个 Clip", ""));
+      for (const sequence of availableSequences()) {
+        select.appendChild(new Option(`${sequence.label} · ${sequence.clips.length} 段`, sequence.id));
+      }
+      select.value = state.sequence?.id || "";
     }
 
     function buildFrame(name, frame) {
@@ -442,7 +496,8 @@
         img.style.display = "block";
       }
       $("frameRange").value = String(state.frame);
-      $("frameReadout").textContent = `帧 ${state.frame + 1} / ${clip.numframes} · ${(clip.numframes / clip.framerate).toFixed(2)}s`;
+      const sequencePart = state.sequence ? ` · 组合 ${state.sequenceIndex + 1}/${state.sequence.clips.length}` : "";
+      $("frameReadout").textContent = `帧 ${state.frame + 1} / ${clip.numframes} · ${(clip.numframes / clip.framerate).toFixed(2)}s${sequencePart}`;
       $("emptyState").hidden = [...state.imageById.values()].some((img) => img.style.display === "block");
     }
 
@@ -496,12 +551,13 @@
       $("bankDisplay").textContent = state.preset ? `${state.preset.appearanceLabel} · ${state.bank}` : "—";
       $("bankValue").textContent = state.bank || "—";
       $("animValue").textContent = state.animation || "—";
+      $("sequenceValue").textContent = state.sequence ? `${state.sequence.label} · ${state.sequenceIndex + 1}/${state.sequence.clips.length}` : "单个 Clip";
       $("fpsValue").textContent = clip ? `${clip.framerate} FPS` : "—";
       $("framesValue").textContent = clip ? String(clip.numframes) : "—";
       $("clipCountValue").textContent = state.animData?.banks?.[state.bank] ? `${Object.keys(state.animData.banks[state.bank]).length} 个` : "—";
       $("phaseValue").textContent = clip ? phaseName(state.animation) : "—";
       $("buildValue").textContent = state.preset?.buildLabel || "—";
-      $("sourceCaption").textContent = state.preset ? `${state.preset.label} / ${state.animation}` : "—";
+      $("sourceCaption").textContent = state.preset ? `${state.preset.label} / ${state.sequence?.label || state.animation}` : "—";
       const notes = $("clipNotes");
       notes.replaceChildren();
       for (const note of state.preset?.notes || []) {
@@ -530,7 +586,21 @@
         state.animation = Object.keys(state.animData.banks?.[state.bank] || {})[0] || "";
       }
       select.value = state.animation;
+      populateSequences();
       loadClip();
+    }
+
+    function showSequenceClip(index, frame = 0) {
+      const clip = sequenceClip(index);
+      if (!state.sequence || !clip) return false;
+      state.sequenceIndex = index;
+      state.animation = state.sequence.clips[index];
+      $("animSelect").value = state.animation;
+      prepareImages(clip);
+      $("frameRange").max = String(Math.max(0, clip.numframes - 1));
+      renderFrame(frame);
+      updateInspector();
+      return true;
     }
 
     async function loadClip() {
@@ -558,34 +628,54 @@
     }
 
     function updatePlayButton() {
-      $("playButton").textContent = state.playing ? "暂停" : (state.playMode === "once" ? "播放一次" : "播放");
+      if (state.playing) {
+        $("playButton").textContent = "暂停";
+      } else if (state.sequence) {
+        $("playButton").textContent = "播放组合";
+      } else {
+        $("playButton").textContent = state.playMode === "once" ? "播放一次" : "播放";
+      }
     }
 
     function start() {
-      const clip = currentClip();
+      let clip = currentClip();
       if (!clip || state.playing) return;
-      if (state.playMode === "once" && state.frame >= clip.numframes - 1) renderFrame(0);
+      if (state.playMode === "once" && state.frame >= clip.numframes - 1) {
+        if (state.sequence) showSequenceClip(0);
+        else renderFrame(0);
+      }
       state.playing = true;
       updatePlayButton();
       const tick = () => {
         if (!state.playing) return;
-        if (state.frame >= clip.numframes - 1) {
-          if (state.playMode === "once") {
-            stop();
-            return;
-          }
-          const pause = state.playMode === "rest" ? 500 : 0;
-          state.timer = window.setTimeout(() => {
-            if (!state.playing) return;
-            renderFrame(0);
-            tick();
-          }, pause);
+        clip = currentClip();
+        if (!clip) {
+          stop();
           return;
         }
+        if (state.frame < clip.numframes - 1) {
+          state.timer = window.setTimeout(() => {
+            renderFrame(state.frame + 1);
+            tick();
+          }, 1000 / clip.framerate / state.speed);
+          return;
+        }
+        if (state.sequence && state.sequenceIndex < state.sequence.clips.length - 1) {
+          showSequenceClip(state.sequenceIndex + 1);
+          state.timer = window.setTimeout(tick, 1000 / clip.framerate / state.speed);
+          return;
+        }
+        if (state.playMode === "once") {
+          stop();
+          return;
+        }
+        const pause = state.playMode === "rest" ? 500 : 0;
         state.timer = window.setTimeout(() => {
-          renderFrame(state.frame + 1);
+          if (!state.playing) return;
+          if (state.sequence) showSequenceClip(0);
+          else renderFrame(0);
           tick();
-        }, 1000 / clip.framerate / state.speed);
+        }, pause);
       };
       tick();
     }
@@ -598,13 +688,35 @@
     }
 
     function togglePlayback() { state.playing ? stop() : start(); }
-    function step(delta) { stop(); renderFrame(state.frame + delta); }
+
+    function step(delta) {
+      stop();
+      if (!state.sequence) {
+        renderFrame(state.frame + delta);
+        return;
+      }
+      let index = state.sequenceIndex;
+      let frame = state.frame + delta;
+      while (frame < 0 && index > 0) {
+        index -= 1;
+        frame += sequenceClip(index).numframes;
+      }
+      while (frame >= sequenceClip(index).numframes && index < state.sequence.clips.length - 1) {
+        frame -= sequenceClip(index).numframes;
+        index += 1;
+      }
+      frame = Math.max(0, Math.min(frame, sequenceClip(index).numframes - 1));
+      if (index !== state.sequenceIndex) showSequenceClip(index, frame);
+      else renderFrame(frame);
+    }
 
     async function loadPreset(id) {
       const preset = PRESETS.find((item) => item.id === id);
       if (!preset) return;
       stop();
       state.preset = preset;
+      state.sequence = null;
+      state.sequenceIndex = 0;
       const savedView = state.viewByAppearance.get(preset.appearanceId);
       state.autoFit = !savedView;
       state.fitPending = !savedView;
@@ -672,7 +784,20 @@
       }
     }
 
-    $("animSelect").addEventListener("change", (event) => { state.animation = event.target.value; loadClip(); });
+    $("animSelect").addEventListener("change", (event) => {
+      state.sequence = null;
+      state.sequenceIndex = 0;
+      $("sequenceSelect").value = "";
+      state.animation = event.target.value;
+      loadClip();
+    });
+    $("sequenceSelect").addEventListener("change", (event) => {
+      const sequence = availableSequences().find((item) => item.id === event.target.value) || null;
+      state.sequence = sequence;
+      state.sequenceIndex = 0;
+      if (sequence) state.animation = sequence.clips[0];
+      loadClip();
+    });
     $("playMode").addEventListener("change", (event) => {
       state.playMode = event.target.value;
       updatePlayButton();
