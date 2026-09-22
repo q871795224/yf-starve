@@ -307,7 +307,7 @@
         sequences: [
           { id: "mounted-attack-side", label: "自制同步攻击 · 侧向", clips: ["yf_mounted_atk_pre_side", "yf_mounted_atk_side"] }
         ],
-        notes: ["以官方 atk_pre_side / atk_side 为牛和骑手移动基底", "只替换骑手上半身手臂、手和武器图层", "骑手攻击姿态按 torso 根重新映射到牛攻击的每一帧", "当前是离线原型，尚未编译为游戏 anim.bin"]
+        notes: ["以官方 atk_pre_side / atk_side 作为完整场景和骑手位移基底", "保留官方手、手臂、武器图层，只在武器手臂的官方手部锚点上加入 20° 局部挥动", "不直接拼接 player_atk_*：两套动作的空间根和骑手朝向不同", "当前是离线原型，尚未编译为游戏 anim.bin"]
       },
       {
         id: "charge",

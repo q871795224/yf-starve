@@ -2,10 +2,10 @@
 """Build a preview-only mounted attack from the official Beefalo bank.
 
 The official cow attack is used as the complete scene and keeps the rider's
-moving seated root.  Only the rider's upper-body symbols are borrowed from
-the player attack.  Those symbols are converted to torso-relative transforms
-and then placed on the torso of each cow-attack frame, so the rider follows
-the motion already present in ``atk_pre_side``/``atk_side``.
+moving seated root, hands, and weapon anchors.  A small, target-space swing is
+applied to the weapon arm around the official weapon hand.  This keeps the
+weapon attached to the mounted pose instead of importing the incompatible
+side-on coordinate system from ``player_atk_*``.
 
 The result is an ``anim.json`` for the local animation lab.  It is not a
 replacement for compiling a final ``anim.bin`` with the DST Mod Tools.
@@ -16,19 +16,16 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 from pathlib import Path
 from typing import Any
 
 
-UPPER_BODY_SYMBOLS = {
-    "hand",
-    "arm_upper",
-    "arm_upper_skin",
-    "arm_lower_cuff",
-    "arm_lower",
-    "swap_object",
-}
 MATRIX_KEYS = ("m_a", "m_b", "m_c", "m_d", "m_tx", "m_ty")
+PREPARATION_FRAMES = 6
+WEAPON_HAND_Z = 39
+SWING_ELEMENT_Z = (40, 41, 42, 43, 44)
+SWING_AMPLITUDE_DEGREES = 20.0
 
 
 def matrix(element: dict[str, Any]) -> list[float]:
@@ -61,62 +58,54 @@ def inverse(transform: list[float]) -> list[float]:
     ]
 
 
-def transform_element(element: dict[str, Any], transform: list[float]) -> dict[str, Any]:
-    result = copy.deepcopy(element)
-    values = multiply(transform, matrix(element))
-    result.update(dict(zip(MATRIX_KEYS, values)))
-    return result
-
-
 def flatten_frames(bank: dict[str, Any], names: list[str]) -> list[dict[str, Any]]:
     return [frame for name in names for frame in bank[name]["frames"]]
 
 
-def find_element(frame: dict[str, Any], name: str) -> dict[str, Any]:
+def find_element_at_z(
+    frame: dict[str, Any], name: str, z_index: int,
+) -> dict[str, Any]:
     for element in frame["elements"]:
-        if element["name"] == name:
+        if element["name"] == name and element.get("z_index") == z_index:
             return element
-    raise ValueError(f"{name!r} is missing from a source frame")
+    raise ValueError(f"{name!r} at z={z_index} is missing from a source frame")
 
 
-def source_frame_indices(source_length: int, target_attack_frames: int) -> list[int]:
-    # Keep the six preparation frames. Compress the source lag + attack into
-    # the seventeen frames occupied by the Beefalo attack clip.
-    indices = list(range(6))
-    lag_and_attack = source_length - 6
-    for frame in range(target_attack_frames):
-        position = frame * (lag_and_attack - 1) / max(1, target_attack_frames - 1)
-        indices.append(6 + int(round(position)))
-    return indices
+def rotation(degrees: float) -> list[float]:
+    radians = math.radians(degrees)
+    return [
+        math.cos(radians),
+        math.sin(radians),
+        -math.sin(radians),
+        math.cos(radians),
+        0.0,
+        0.0,
+    ]
 
 
-def make_clip_frames(
-    cow_frames: list[dict[str, Any]], rider_frames: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    target_attack_frames = len(cow_frames) - 6
-    indices = source_frame_indices(len(rider_frames), target_attack_frames)
-    if len(indices) != len(cow_frames):
-        raise ValueError("source and target timelines did not produce the same length")
+def make_clip_frames(cow_frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add a bounded weapon-arm swing while retaining the official scene.
 
-    result = []
-    for cow_frame, rider_index in zip(cow_frames, indices):
-        rider_frame = rider_frames[rider_index]
-        cow_torso = find_element(cow_frame, "torso")
-        rider_torso = find_element(rider_frame, "torso")
-        rider_to_cow_torso = multiply(matrix(cow_torso), inverse(matrix(rider_torso)))
-
-        elements = [
-            copy.deepcopy(element)
-            for element in cow_frame["elements"]
-            if element["name"] not in UPPER_BODY_SYMBOLS
-        ]
-        for element in rider_frame["elements"]:
-            if element["name"] in UPPER_BODY_SYMBOLS:
-                elements.append(transform_element(element, rider_to_cow_torso))
-
-        frame = copy.deepcopy(cow_frame)
-        frame["elements"] = elements
-        result.append(frame)
+    The animation bank's rider and Beefalo layers already share the same
+    target-space root. Rotating the arm chain around its existing weapon hand
+    therefore changes the attack gesture without introducing the offset seen
+    when ``player_atk_*`` is copied as an absolute pose.
+    """
+    attack_frames = len(cow_frames) - PREPARATION_FRAMES
+    result = [copy.deepcopy(frame) for frame in cow_frames]
+    for index, frame in enumerate(result[PREPARATION_FRAMES:]):
+        progress = index / max(1, attack_frames - 1)
+        angle = SWING_AMPLITUDE_DEGREES * math.sin(math.pi * progress)
+        pivot = find_element_at_z(frame, "hand", WEAPON_HAND_Z)
+        swing = multiply(
+            matrix(pivot),
+            multiply(rotation(angle), inverse(matrix(pivot))),
+        )
+        for element in frame["elements"]:
+            if element.get("z_index") in SWING_ELEMENT_Z:
+                element.update(
+                    dict(zip(MATRIX_KEYS, multiply(swing, matrix(element))))
+                )
     return result
 
 
@@ -124,8 +113,7 @@ def build(input_path: Path, output_path: Path) -> None:
     data = json.loads(input_path.read_text())
     bank = data["banks"]["wilsonbeefalo"]
     cow_frames = flatten_frames(bank, ["atk_pre_side", "atk_side"])
-    rider_frames = flatten_frames(bank, ["player_atk_pre_side", "player_atk_lag_side", "player_atk_side"])
-    frames = make_clip_frames(cow_frames, rider_frames)
+    frames = make_clip_frames(cow_frames)
 
     bank["yf_mounted_atk_pre_side"] = {
         "framerate": 30,
