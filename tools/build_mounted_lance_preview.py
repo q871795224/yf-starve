@@ -81,6 +81,9 @@ PRIMARY_HAND_Z = 39
 SUPPORT_HAND_Z = 34
 PRIMARY_ARM_Z = (39, 40, 41, 42, 43)
 SUPPORT_ARM_Z = (34, 35, 36, 37, 38)
+RESTING_HAND_Z = (1, 2)
+SUPPORT_GRIP_FRONT_Z = 1
+PRIMARY_GRIP_FRONT_Z = 0
 
 
 def spear_matrix(degrees: float, width_scale: float = 1.0, length_scale: float = 1.0) -> list[float]:
@@ -104,6 +107,23 @@ def find_element(frame: dict[str, Any], name: str, z_index: int) -> dict[str, An
 
 def element_point(element: dict[str, Any]) -> tuple[float, float]:
     return float(element["m_tx"]), float(element["m_ty"])
+
+
+def remove_resting_hands(frame: dict[str, Any]) -> None:
+    """Remove the two original hands that rest on the Beefalo's head."""
+    frame["elements"] = [
+        element
+        for element in frame["elements"]
+        if not (element.get("name") == "hand" and element.get("z_index") in RESTING_HAND_Z)
+    ]
+
+
+def promote_grip_hands(frame: dict[str, Any]) -> None:
+    """Draw the two existing grip hands over the lance without copying them."""
+    support = find_element(frame, "hand", SUPPORT_HAND_Z)
+    primary = find_element(frame, "hand", PRIMARY_HAND_Z)
+    support["z_index"] = SUPPORT_GRIP_FRONT_Z
+    primary["z_index"] = PRIMARY_GRIP_FRONT_Z
 
 
 def tip_axis(degrees: float) -> tuple[float, float]:
@@ -179,6 +199,7 @@ def replace_with_spear(
     frame: dict[str, Any],
     anchor: tuple[float, float],
     angle: float,
+    extension: float = 0.0,
     z_index: int = 2,
     width_scale: float = 1.0,
     length_scale: float = 1.0,
@@ -197,10 +218,12 @@ def replace_with_spear(
         # being drawn twice.
         spear["z_index"] = z_index
         spear.update(dict(zip(MATRIX_KEYS, spear_matrix(angle, width_scale, length_scale))))
-        # Keep the local origin at the primary hand. Translating the weapon
-        # independently makes it visibly detach from both hands; the curved
-        # thrust is expressed by the arm and angle instead.
-        spear["m_tx"], spear["m_ty"] = anchor
+        # Slide the long lance along its own axis while the hands stay on the
+        # shaft. This gives the thrust a visible forward travel instead of
+        # making the weapon rotate around a fixed hand point.
+        axis = tip_axis(angle)
+        spear["m_tx"] = anchor[0] + extension * axis[0]
+        spear["m_ty"] = anchor[1] + extension * axis[1]
         elements.append(spear)
     frame["elements"] = elements
 
@@ -225,25 +248,36 @@ def make_frames(
     # finishes.  Angle 0 is the spear's local up direction; 90 is horizontal.
     pre_angles = [90, 90, 90, 90, 90, 90]
     attack_angles = [90, 86, 76, 62, 45, 28, 12, 0, 4, 14, 28, 44, 60, 74, 84, 90, 90]
+    pre_extensions = [0, -6, -12, -18, -24, -30]
+    # Push forward while the lance is still horizontal/diagonal, then carry
+    # that motion into the upward point. The return begins after the peak so
+    # the attack reads as a thrust instead of an in-place rotation.
+    attack_extensions = [-30, -10, 20, 50, 75, 82, 70, 52, 42, 34, 26, 18, 12, 6, 0, -8, -15]
 
     for frame in idle:
+        remove_resting_hands(frame)
         add_rider_lean(frame, 0)
         anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
         align_primary_grip(frame, 90)
         align_support_grip(frame, anchor, 90)
-        replace_with_spear(frame, anchor, angle=90, z_index=2)
-    for frame, lean, angle in zip(pre, pre_lean, pre_angles):
+        promote_grip_hands(frame)
+        replace_with_spear(frame, anchor, angle=90, extension=0, z_index=2)
+    for frame, lean, angle, extension in zip(pre, pre_lean, pre_angles, pre_extensions):
+        remove_resting_hands(frame)
         add_rider_lean(frame, lean)
         anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
         align_primary_grip(frame, angle)
         align_support_grip(frame, anchor, angle)
-        replace_with_spear(frame, anchor, angle=angle, z_index=2)
-    for frame, lean, angle in zip(attack, attack_lean, attack_angles):
+        promote_grip_hands(frame)
+        replace_with_spear(frame, anchor, angle=angle, extension=extension, z_index=2)
+    for frame, lean, angle, extension in zip(attack, attack_lean, attack_angles, attack_extensions):
+        remove_resting_hands(frame)
         add_rider_lean(frame, lean)
         anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
         align_primary_grip(frame, angle)
         align_support_grip(frame, anchor, angle)
-        replace_with_spear(frame, anchor, angle=angle, z_index=2)
+        promote_grip_hands(frame)
+        replace_with_spear(frame, anchor, angle=angle, extension=extension, z_index=2)
     return idle, pre, attack
 
 

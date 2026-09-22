@@ -319,7 +319,7 @@
         anim: "/temp/animation-lab/mounted-lance-prototype/anim.json",
         build: "/temp/animation-lab/mounted-lance-prototype/build.json",
         images: "/temp/animation-lab/mounted-lance-prototype/images/",
-        assetVersion: "mounted-lance-curve-v2-20260923",
+        assetVersion: "mounted-lance-curve-v3-20260923",
         defaultBank: "wilsonbeefalo",
         defaultAnim: "yf_mounted_lancejab_idle_side",
         buildLabel: "官方 Beefalo + Steam swap_spear_lance",
@@ -327,7 +327,7 @@
           { id: "mounted-lancejab-side", label: "常态 → 准备 → 向上骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_idle_side", "yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] },
           { id: "mounted-lancejab-attack", label: "准备 → 向上骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] }
         ],
-        notes: ["预览前 3 帧是官方 idle_loop；攻击组合直接使用官方 atk_pre_side + atk_side，共 6 + 17 = 23 帧", "枪保持 Steam 原始素材尺寸，避免非等比放大造成模糊；武器原点固定在骑手主手", "只调整原动画中的两只握枪手部和手臂，不复制手部图层，避免出现多余的手", "枪从横向起势，随牛的顶撞转到向上，再在动作收尾时回到横向；攻击段仍严格保持 23 帧", "player_lancejab 的官方节奏只作为素材参考；没有把它的绝对姿态直接粘到 wilsonbeefalo 上", "当前是离线原型，尚未编译为游戏 anim.bin"]
+        notes: ["预览前 3 帧是官方 idle_loop；攻击组合直接使用官方 atk_pre_side + atk_side，共 6 + 17 = 23 帧", "枪保持 Steam 原始素材尺寸，避免非等比放大造成模糊；武器沿枪身轴线滑动，形成明显前挺", "移除原版搭在牛头上的两只手，只把原有握枪手部提到枪层前面，没有复制手部图层", "枪从横向收势开始，先向前挺出，再随牛的顶撞转到向上，随后收回横向；攻击段仍严格保持 23 帧", "player_lancejab 的官方节奏只作为素材参考；没有把它的绝对姿态直接粘到 wilsonbeefalo 上", "当前是离线原型，尚未编译为游戏 anim.bin"]
       },
       {
         id: "charge",
