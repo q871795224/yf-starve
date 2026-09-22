@@ -276,7 +276,7 @@
           { id: "graze", label: "吃草", clips: ["graze2_pre", "graze2_loop", "graze2_pst"] },
           { id: "run-side", label: "奔跑 · 侧向", clips: ["run_pre_side", "run_loop_side", "run_pst_side"] }
         ],
-        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "atk_* 是牛攻击、player_atk_* 是骑手单独攻击；同步选项会把两条图层轨道叠加预览", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
+        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "atk_* 是牛攻击、player_atk_* 是骑手单独攻击；同步选项以骑手鞍具为基准重新对齐牛轨道", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
       },
       {
         id: "mount",
@@ -455,6 +455,57 @@
       return track.clips.flatMap((name) => clips[name]?.frames || []);
     }
 
+    function itemMatrix(item) {
+      return [item.m_a, item.m_b, item.m_c, item.m_d, item.m_tx, item.m_ty];
+    }
+
+    function multiplyMatrices(left, right) {
+      return [
+        left[0] * right[0] + left[2] * right[1],
+        left[1] * right[0] + left[3] * right[1],
+        left[0] * right[2] + left[2] * right[3],
+        left[1] * right[2] + left[3] * right[3],
+        left[0] * right[4] + left[2] * right[5] + left[4],
+        left[1] * right[4] + left[3] * right[5] + left[5]
+      ];
+    }
+
+    function invertMatrix(matrix) {
+      const [a, b, c, d, tx, ty] = matrix;
+      const determinant = a * d - b * c;
+      if (Math.abs(determinant) < 0.000001) return null;
+      return [
+        d / determinant,
+        -b / determinant,
+        -c / determinant,
+        a / determinant,
+        (c * ty - d * tx) / determinant,
+        (b * tx - a * ty) / determinant
+      ];
+    }
+
+    function alignTrackToBase(sourceFrame, baseFrame, anchorName) {
+      const sourceAnchor = sourceFrame.elements.find((item) => item.name === anchorName);
+      const baseAnchor = baseFrame.elements.find((item) => item.name === anchorName);
+      if (!sourceAnchor || !baseAnchor) return null;
+      const inverse = invertMatrix(itemMatrix(sourceAnchor));
+      return inverse ? multiplyMatrices(itemMatrix(baseAnchor), inverse) : null;
+    }
+
+    function transformItem(item, matrix) {
+      if (!matrix) return item;
+      const transformed = multiplyMatrices(matrix, itemMatrix(item));
+      return {
+        ...item,
+        m_a: transformed[0],
+        m_b: transformed[1],
+        m_c: transformed[2],
+        m_d: transformed[3],
+        m_tx: transformed[4],
+        m_ty: transformed[5]
+      };
+    }
+
     function composeParallelSequence(sequence) {
       const tracks = sequence.tracks.map((track) => ({
         ...track,
@@ -464,10 +515,16 @@
       const firstClip = state.animData.banks[state.bank][sequence.tracks[0].clips[0]];
       const frames = Array.from({ length: numframes }, (_, index) => {
         const selected = tracks.map((track) => track.frames[Math.min(index, track.frames.length - 1)]);
+        const cowFrame = selected[tracks.findIndex((track) => track.role === "beefalo")];
+        const riderFrame = selected[tracks.findIndex((track) => track.role === "rider")];
+        // The two official clips use different root poses. Keep the rider
+        // attack as the base scene and retarget the cow attack around its
+        // saddle, otherwise the cow head and rider drift apart immediately.
+        const cowAlignment = alignTrackToBase(cowFrame, riderFrame, "swap_saddle");
         const elements = selected.flatMap((frame, trackIndex) => frame.elements.filter((item) => {
           const beefalo = isBeefaloElement(item);
           return tracks[trackIndex].role === "beefalo" ? beefalo : !beefalo;
-        }));
+        }).map((item) => tracks[trackIndex].role === "beefalo" ? transformItem(item, cowAlignment) : item));
         return {
           x: 0,
           y: 0,
