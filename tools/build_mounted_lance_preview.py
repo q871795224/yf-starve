@@ -81,7 +81,6 @@ PRIMARY_HAND_Z = 39
 SUPPORT_HAND_Z = 34
 PRIMARY_ARM_Z = (39, 40, 41, 42, 43)
 SUPPORT_ARM_Z = (34, 35, 36, 37, 38)
-GRIP_HAND_FRONT_Z = 1
 
 
 def spear_matrix(degrees: float, width_scale: float = 1.0, length_scale: float = 1.0) -> list[float]:
@@ -176,15 +175,6 @@ def align_support_grip(frame: dict[str, Any], anchor: tuple[float, float], angle
     rotate_elements(frame, SUPPORT_ARM_Z, shoulder_point, target_angle - current_angle)
 
 
-def bring_grip_hands_forward(frame: dict[str, Any]) -> None:
-    """Render the two grip hands above the weapon so the contact reads clearly."""
-    for source_z in (SUPPORT_HAND_Z, PRIMARY_HAND_Z):
-        source = find_element(frame, "hand", source_z)
-        hand = copy.deepcopy(source)
-        hand["z_index"] = GRIP_HAND_FRONT_Z
-        frame["elements"].append(hand)
-
-
 def replace_with_spear(
     frame: dict[str, Any],
     anchor: tuple[float, float],
@@ -207,9 +197,9 @@ def replace_with_spear(
         # being drawn twice.
         spear["z_index"] = z_index
         spear.update(dict(zip(MATRIX_KEYS, spear_matrix(angle, width_scale, length_scale))))
-        # Keep the local origin at the primary hand.  Translating the weapon
-        # independently makes it visibly detach from both hands during the
-        # attack; the upward thrust is expressed by the arm and angle instead.
+        # Keep the local origin at the primary hand. Translating the weapon
+        # independently makes it visibly detach from both hands; the curved
+        # thrust is expressed by the arm and angle instead.
         spear["m_tx"], spear["m_ty"] = anchor
         elements.append(spear)
     frame["elements"] = elements
@@ -230,30 +220,30 @@ def make_frames(
 
     pre_lean = progress_values(len(pre), [0, 5, 10, 15, 20, 24])
     attack_lean = progress_values(len(attack), [26, 30, 30, 28, 24, 20, 16, 12, 8, 4, 0, 0, 0, 0, 0, 0, 0])
-    pre_angles = [0, 4, 8, 12, 16, 20]
-    attack_angles = [20, 17, 14, 11, 8, 5, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # The lance starts horizontal, follows the beefalo's upward hit, and is
+    # recovered to a horizontal carry position before the 23-frame attack
+    # finishes.  Angle 0 is the spear's local up direction; 90 is horizontal.
+    pre_angles = [90, 90, 90, 90, 90, 90]
+    attack_angles = [90, 86, 76, 62, 45, 28, 12, 0, 4, 14, 28, 44, 60, 74, 84, 90, 90]
 
     for frame in idle:
         add_rider_lean(frame, 0)
         anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
-        align_primary_grip(frame, 0)
-        align_support_grip(frame, anchor, 0)
-        replace_with_spear(frame, anchor, angle=0, z_index=2)
-        bring_grip_hands_forward(frame)
+        align_primary_grip(frame, 90)
+        align_support_grip(frame, anchor, 90)
+        replace_with_spear(frame, anchor, angle=90, z_index=2)
     for frame, lean, angle in zip(pre, pre_lean, pre_angles):
         add_rider_lean(frame, lean)
         anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
         align_primary_grip(frame, angle)
         align_support_grip(frame, anchor, angle)
         replace_with_spear(frame, anchor, angle=angle, z_index=2)
-        bring_grip_hands_forward(frame)
     for frame, lean, angle in zip(attack, attack_lean, attack_angles):
         add_rider_lean(frame, lean)
         anchor = element_point(find_element(frame, "hand", PRIMARY_HAND_Z))
         align_primary_grip(frame, angle)
         align_support_grip(frame, anchor, angle)
         replace_with_spear(frame, anchor, angle=angle, z_index=2)
-        bring_grip_hands_forward(frame)
     return idle, pre, attack
 
 
