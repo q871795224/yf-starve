@@ -34,6 +34,14 @@ hunger. The pass ends after movement stops, the rider dismounts, the current pos
 beefalo cannot pay the hunger cost. No custom animation assets were added. Validate grid alignment, movement
 speed, animation transitions, hunger cost, and multiplayer behavior in-game before balancing it.
 
+Mounted lance is a fifth standalone prototype. The configurable key (default B) is available while riding a
+beefalo and plays a custom 23-frame `wilsonbeefalo` sequence: the rider leans with the vanilla beefalo attack,
+the lance travels forward and follows the upward thrust, and the original grip hands stay in front of the weapon.
+The resources are `anim/yf_mounted_lance.zip` (three added clips) and the small official `swap_spear_lance` build.
+This first game pass is visual only: it intentionally does not call `combat:DoAttack`, so we can compare the
+mounted timing and layering without adding a second hit to the vanilla beefalo attack. It uses the side-facing
+variant for the first in-game pass; damage, directional variants, and the lance equipment rule come afterward.
+
 Animation direction: reuse stock mounted-player animations first. The battle cry uses the existing mounted
 `bellow` clip. If a later skill needs a pose that is absent from the mounted bank, evaluate a custom
 Spriter/SCML animation and compile it into `anim/`. The prototype does not add skill-tree unlocks.

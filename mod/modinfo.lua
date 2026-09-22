@@ -56,4 +56,18 @@ configuration_options =
         default = 108,
         client = true,
     },
+    {
+        name = "lance_key",
+        label = "骑枪演示按键",
+        hover = "骑乘牛时播放 23 帧骑枪刺击动作（当前仅演示动画，不造成额外伤害）。",
+        options =
+        {
+            { description = "B", data = 98 },
+            { description = "M", data = 109 },
+            { description = "O", data = 111 },
+            { description = "关闭", data = -1 },
+        },
+        default = 98,
+        client = true,
+    },
 }
