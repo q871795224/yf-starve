@@ -312,7 +312,7 @@
       {
         id: "mounted-lance-prototype",
         label: "自制骑枪刺击原型",
-        meta: "29 frames · Steam lance",
+        meta: "28 frames · active 25f · Steam lance",
         appearanceId: "official-beefalo",
         appearanceLabel: "官方 Beefalo / 骑手",
         appearanceMeta: "wilsonbeefalo · Steam depot + 自制",
@@ -324,10 +324,10 @@
         defaultAnim: "yf_mounted_lancejab_idle_side",
         buildLabel: "官方 Beefalo + Steam swap_spear_lance",
         sequences: [
-          { id: "mounted-lancejab-side", label: "常态 → 准备 → 骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_idle_side", "yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] },
-          { id: "mounted-lancejab-attack", label: "准备 → 骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] }
+          { id: "mounted-lancejab-side", label: "常态 → 提枪 → 准备 → 骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_idle_side", "yf_mounted_lancejab_transition_side", "yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] },
+          { id: "mounted-lancejab-attack", label: "提枪 → 准备 → 骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_transition_side", "yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] }
         ],
-        notes: ["前 6 帧使用官方 idle_loop，明确区分常态首帧和 atk_pre 的准备姿态", "骑手围绕 torso_pelvis 做最高约 30° 的目标空间前倾，牛仍使用官方 atk_* 动作", "武器取 Steam 的 swap_spear_lance build，放到 z=2，位于牛头 z=3..9 之前，并在冲刺阶段向前伸出", "player_lancejab 的官方节奏只作为素材参考；没有把它的绝对姿态直接粘到 wilsonbeefalo 上", "当前是离线原型，尚未编译为游戏 anim.bin"]
+        notes: ["前 3 帧是官方 idle_loop；接着 2 帧是提枪过渡，避免常态持枪突然跳到 atk_pre", "atk_pre_side + atk_side 保持官方 6 + 17 = 23 帧；完整触发段为 2 + 6 + 17 = 25 帧，只比原版多 2 帧", "骑手围绕 torso_pelvis 做最高约 30° 的目标空间前倾，牛仍使用官方 atk_* 动作", "武器取 Steam 的 swap_spear_lance build，沿枪身方向加长，放到 z=2，位于牛头 z=3..9 之前，并在冲刺阶段向右下斜刺", "player_lancejab 的官方节奏只作为素材参考；没有把它的绝对姿态直接粘到 wilsonbeefalo 上", "当前是离线原型，尚未编译为游戏 anim.bin"]
       },
       {
         id: "charge",

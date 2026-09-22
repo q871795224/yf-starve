@@ -84,13 +84,13 @@ def transform_point(transform: list[float], point: tuple[float, float]) -> tuple
     )
 
 
-def spear_matrix(degrees: float, scale: float = 1.15) -> list[float]:
+def spear_matrix(degrees: float, width_scale: float = 1.05, length_scale: float = 1.42) -> list[float]:
     radians = math.radians(degrees)
     return [
-        scale * math.cos(radians),
-        scale * math.sin(radians),
-        -scale * math.sin(radians),
-        scale * math.cos(radians),
+        width_scale * math.cos(radians),
+        width_scale * math.sin(radians),
+        -length_scale * math.sin(radians),
+        length_scale * math.cos(radians),
         0.0,
         0.0,
     ]
@@ -121,7 +121,8 @@ def replace_with_spear(
     thrust: float,
     angle: float,
     z_index: int = 2,
-    scale: float = 1.15,
+    width_scale: float = 1.05,
+    length_scale: float = 1.42,
 ) -> None:
     elements = []
     for element in frame["elements"]:
@@ -136,7 +137,7 @@ def replace_with_spear(
         # during the thrust. The old official weapon is removed instead of
         # being drawn twice.
         spear["z_index"] = z_index
-        spear.update(dict(zip(MATRIX_KEYS, spear_matrix(angle, scale))))
+        spear.update(dict(zip(MATRIX_KEYS, spear_matrix(angle, width_scale, length_scale))))
         spear["m_tx"] = lean_point[0] + thrust
         spear["m_ty"] = lean_point[1]
         elements.append(spear)
@@ -149,25 +150,40 @@ def progress_values(count: int, values: list[float]) -> list[float]:
     return values
 
 
-def make_frames(bank: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    idle = [copy.deepcopy(frame) for frame in bank["idle_loop"]["frames"][:6]]
+def make_frames(
+    bank: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    idle = [copy.deepcopy(frame) for frame in bank["idle_loop"]["frames"][:3]]
+    transition = [copy.deepcopy(bank["atk_pre_side"]["frames"][0]) for _ in range(2)]
     pre = [copy.deepcopy(frame) for frame in bank["atk_pre_side"]["frames"]]
     attack = [copy.deepcopy(frame) for frame in bank["atk_side"]["frames"]]
 
+    transition_progress = [0.0, 1.0]
     pre_lean = progress_values(len(pre), [0, 5, 10, 15, 20, 24])
     attack_lean = progress_values(len(attack), [26, 30, 30, 28, 24, 20, 16, 12, 8, 4, 0, 0, 0, 0, 0, 0, 0])
     attack_thrust = [0, 8, 18, 28, 38, 42, 38, 32, 25, 18, 12, 7, 3, 0, 0, 0, 0]
 
     for frame in idle:
         point = add_rider_lean(frame, 0)
-        replace_with_spear(frame, point, thrust=0, angle=18, z_index=44, scale=0.95)
+        replace_with_spear(frame, point, thrust=0, angle=18, z_index=2, width_scale=1.0, length_scale=1.15)
+    for frame, progress in zip(transition, transition_progress):
+        point = add_rider_lean(frame, 0)
+        replace_with_spear(
+            frame,
+            point,
+            thrust=0,
+            angle=18 + 10 * progress,
+            z_index=2,
+            width_scale=1.0 + 0.05 * progress,
+            length_scale=1.15 + 0.20 * progress,
+        )
     for frame, lean in zip(pre, pre_lean):
         point = add_rider_lean(frame, lean)
-        replace_with_spear(frame, point, thrust=0, angle=58 + lean * 1.35)
+        replace_with_spear(frame, point, thrust=0, angle=38 + lean * 3)
     for frame, lean, thrust in zip(attack, attack_lean, attack_thrust):
         point = add_rider_lean(frame, lean)
-        replace_with_spear(frame, point, thrust=thrust, angle=90 + min(10, thrust / 4))
-    return idle, pre, attack
+        replace_with_spear(frame, point, thrust=thrust, angle=110 + min(12, thrust / 3.5))
+    return idle, transition, pre, attack
 
 
 def decode_tex_to_png(path: Path, dest: Path) -> None:
@@ -272,8 +288,9 @@ def build(input_anim: Path, input_build: Path, spear_zip: Path, output: Path) ->
     animation = json.loads(input_anim.read_text())
     build_data = json.loads(input_build.read_text())
     bank = animation["banks"]["wilsonbeefalo"]
-    idle, pre, attack = make_frames(bank)
+    idle, transition, pre, attack = make_frames(bank)
     bank["yf_mounted_lancejab_idle_side"] = {"framerate": 30, "numframes": len(idle), "frames": idle}
+    bank["yf_mounted_lancejab_transition_side"] = {"framerate": 30, "numframes": len(transition), "frames": transition}
     bank["yf_mounted_lancejab_pre_side"] = {"framerate": 30, "numframes": len(pre), "frames": pre}
     bank["yf_mounted_lancejab_side"] = {"framerate": 30, "numframes": len(attack), "frames": attack}
 
@@ -287,7 +304,13 @@ def build(input_anim: Path, input_build: Path, spear_zip: Path, output: Path) ->
 
     (output / "anim.json").write_text(json.dumps(animation, ensure_ascii=False, separators=(",", ":")))
     (output / "build.json").write_text(json.dumps(build_data, ensure_ascii=False, separators=(",", ":")))
-    print(f"wrote {output / 'anim.json'} ({len(idle) + len(pre) + len(attack)} preview frames)")
+    trigger_frames = len(transition) + len(pre) + len(attack)
+    core_attack_frames = len(pre) + len(attack)
+    print(
+        f"wrote {output / 'anim.json'} "
+        f"({len(idle) + trigger_frames} preview frames; trigger {trigger_frames} frames; "
+        f"core attack {core_attack_frames} frames)"
+    )
     print(f"wrote {output / 'build.json'} with Steam {SPEAR_SYMBOL} symbol")
 
 
