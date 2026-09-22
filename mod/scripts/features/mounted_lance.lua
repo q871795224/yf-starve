@@ -28,6 +28,10 @@ end
 
 local function PlayLanceAnimation(inst)
     StopRider(inst)
+    -- The offline preview uses a merged build. In-game the rider keeps its
+    -- normal mounted build, so map the separate lance build onto the custom
+    -- animation symbol for the duration of this state.
+    inst.AnimState:OverrideSymbol("swap_spear_lance", "swap_spear_lance", "swap_spear_lance")
     inst.AnimState:PlayAnimation(LANCE_PRE_ANIMATION, false)
     inst.AnimState:PushAnimation(LANCE_ANIMATION, false)
 end
@@ -46,6 +50,7 @@ end
 
 local function FinishLance(inst)
     if inst.sg ~= nil and inst.sg:HasStateTag("yf_mounted_lance") then
+        inst.AnimState:ClearOverrideSymbol("swap_spear_lance")
         inst.sg:GoToState("idle")
     end
 end
