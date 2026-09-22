@@ -41,6 +41,16 @@ python3 tools/catalog_anim_banks.py --contains mount
 
 这些工具都在 `temp/` 下临时使用，不进入模组发布包。当前参考模组里的 bank 是拆分追加的资源，`wilsonbeefalo.zip` 只含自定义 `lancecharge_*`。官方 Steam depot 的 `beefalo_*.zip`、`player_mount*.zip`、`saddle_basic.zip`、`player_lancejab.zip` 和 `swap_spear_lance.zip` 已放在本地 `temp/official-dst/`；浏览器里的“官方骑乘动作”使用这些官方动作、牛和鞍具资源，骑手服装部件仍沿用已提取的组合 build 来保证离线预览完整。
 
+骑枪原型进入游戏前用下面的命令编译资源：
+
+```bash
+python3 tools/build_mounted_lance_asset.py
+```
+
+命令把预览 JSON 中的 3 个 `yf_mounted_lancejab_*` 动作编译为 `mod/anim/yf_mounted_lance.zip`，并复制官方的
+`swap_spear_lance.zip` 到 `mod/anim/`。模组通过 `Asset("ANIM", ...)` 加载这两个追加资源；它不需要把整套官方
+`wilsonbeefalo` bank 重复打包。游戏内动作仍由骑手的 `wilson` / `wilson_client` 状态图触发。
+
 本次离线验证已经跑通：`BetterBeefalo/anim/player_mount_shoes.zip` 的 build、贴图和 `wilsonbeefalo` 动作可以在 HTML 播放器里逐帧显示；`wilsongrassbeef_15.zip` 配合 `grass_gator_build.zip` 也能显示 `bellow` 的 51 帧姿态变化。第二个结果只证明动作资源和播放器链路有效，最终 beefalo 外观仍要使用 DST 安装目录里的匹配 build。
 
 ## 当前工作区的逐帧预览
