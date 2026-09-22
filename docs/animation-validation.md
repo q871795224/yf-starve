@@ -27,6 +27,8 @@ python3 tools/inspect_anim_bank.py \
 
 这些工具都在 `temp/` 下临时使用，不进入模组发布包。当前参考模组里的 bank 是拆分追加的资源，`wilsonbeefalo.zip` 只含自定义 `lancecharge_*`；原版 `bellow` 所在的 bank 分片和完整 beefalo build 需要从测试机的 DST 安装目录补齐，不能用 gator 的 build 代替。
 
+本次离线验证已经跑通：`BetterBeefalo/anim/player_mount_shoes.zip` 的 build、贴图和 `wilsonbeefalo` 动作可以在 HTML 播放器里逐帧显示；`wilsongrassbeef_15.zip` 配合 `grass_gator_build.zip` 也能显示 `bellow` 的 51 帧姿态变化。第二个结果只证明动作资源和播放器链路有效，最终 beefalo 外观仍要使用 DST 安装目录里的匹配 build。
+
 ## 游戏层验证
 
 资源检查通过后，仍需在 DST 中验证：
