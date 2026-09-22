@@ -212,11 +212,27 @@ def extract_spear_build(spear_zip: Path, staging: Path) -> tuple[dict[str, Any],
     tools = ROOT / "temp/tools/DSTmodutils/pyscripts"
     if str(tools) not in sys.path:
         sys.path.insert(0, str(tools))
+
+    # Import these two native extensions before DSTmodutils.  Otherwise an
+    # incomplete Pillow directory can make the later ImportError look like a
+    # missing ``compiler`` package, which hides the actual environment issue.
+    try:
+        from PIL import Image  # noqa: F401
+        import texture2ddecoder  # noqa: F401
+    except ImportError as exc:
+        raise RuntimeError(
+            "动画素材解码依赖没有加载成功。请确认 temp/pydeps/PIL/_imaging "
+            "和 temp/pydeps/texture2ddecoder 存在，并使用与这些 .so 匹配的 Python 版本。"
+        ) from exc
     try:
         import compiler.anim_build as anim_build
         from compiler.anim_build import AnimBuild
-    except ImportError as exc:
+    except ModuleNotFoundError as exc:
+        if exc.name != "compiler":
+            raise RuntimeError("DSTmodutils 的 Python 依赖没有加载成功") from exc
         raise RuntimeError("找不到 temp/tools/DSTmodutils/pyscripts") from exc
+    except ImportError as exc:
+        raise RuntimeError("DSTmodutils 的 Python 依赖没有加载成功") from exc
 
     anim_build.tex_to_png = decode_tex_to_png
     with ZipFile(spear_zip) as archive:
