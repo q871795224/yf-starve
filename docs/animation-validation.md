@@ -45,20 +45,25 @@ python3 tools/catalog_anim_banks.py --contains mount
 
 ## 当前工作区的逐帧预览
 
-当前工作区已经准备了两个可直接打开的预览目录。启动一个只读 HTTP 服务，避免浏览器阻止本地 JSON 或贴图：
+项目内置了一个整理过布局的浏览器，不需要拖文件或手动填写贴图路径。启动服务：
 
 ```bash
-python3 -m http.server 8765 --bind 127.0.0.1 --directory temp/animation-lab
+python3 tools/serve_animation_lab.py
 ```
 
-浏览器打开 <http://127.0.0.1:8765/index.html>，把对应目录里的 `anim.json` 和 `build.json` 拖到页面的“anim.json/build.json”区域，再把“贴图路径”设为下面的 URL，点击“贴图刷新”：
+浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“骑手装具”预览，并提供五个入口：
 
-| 预览 | JSON 文件目录 | 贴图路径 | 重点动作 |
-| --- | --- | --- | --- |
-| 完整骑手装具参考 | `temp/animation-lab/player_mount_shoes/` | `http://127.0.0.1:8765/player_mount_shoes/images/` | `wilsonbeefalo / mount_shoes`、`dismount_shoes` |
-| 战吼姿态参考 | `temp/animation-lab/bellow_preview/` | `http://127.0.0.1:8765/bellow_preview/images/` | `wilsongrassbeef / bellow` |
+| 预览 | 内容 | 重点动作 |
+| --- | --- | --- |
+| 骑手装具 | 完整 rider + beefalo build | `wilsonbeefalo / mount_shoes`、`dismount_shoes` |
+| 蓄力冲撞 | `wilsonbeefalo` 动作配合 beefalo build | `lancecharge_pre/loop/pst_*` |
+| 牛动作参考 | 参考模组的 gator build | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |
+| 骑乘与补给 | 参考模组的 gator build | `mount`、`dismount`、`buck`、`eat_*` |
+| 移动片段 | 参考模组的 gator build | `run_pre/loop/pst_*` |
 
-第二个目录使用的是参考模组的 gator build，只用于确认 `bellow` 的帧会改变骑乘组合体；它不代表最终牛的贴图。鼠标滚轮可以逐帧，播放按钮可以循环，bank 和 anim 下拉框用于切换动作。退出服务按 `Ctrl-C`。
+页面左侧切换预览，中间下拉框切换 bank 和动作，底部可以播放、暂停、逐帧和调速，右侧显示帧数、帧率和阶段。页面按动画边界自动缩放，滑动 Scale 可以查看局部细节。快捷键是空格播放/暂停、左右方向键逐帧。退出服务按 `Ctrl-C`。
+
+牛动作、骑乘补给和移动预览使用参考模组的 gator build，只用于确认动画帧会改变骑乘组合体；最终牛外观仍要替换成目标 beefalo build。
 
 ## 游戏层验证
 

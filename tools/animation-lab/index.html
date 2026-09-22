@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111817'/%3E%3Cpath d='M14 25 5 15l4-4 14 8m27 6 9-10-4-4-14 8' fill='none' stroke='%23f0a168' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cellipse cx='32' cy='37' rx='18' ry='15' fill='%2398c5a7'/%3E%3Ccircle cx='25' cy='36' r='2.5' fill='%23111817'/%3E%3Ccircle cx='39' cy='36' r='2.5' fill='%23111817'/%3E%3Cpath d='M27 44h10' stroke='%23111817' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <title>Beefalo Motion Lab</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4efdf;
+      --muted: #a9ad9e;
+      --faint: #6d756b;
+      --night: #111817;
+      --panel: rgba(26, 35, 32, .92);
+      --panel-strong: #202d29;
+      --line: rgba(244, 239, 223, .13);
+      --orange: #d87845;
+      --orange-light: #f0a168;
+      --mint: #98c5a7;
+      --yellow: #e6c77a;
+      --scene-scale: 1;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 80% -10%, rgba(216, 120, 69, .19), transparent 34rem),
+        radial-gradient(circle at 0% 80%, rgba(114, 163, 137, .12), transparent 30rem),
+        var(--night);
+      font: 14px/1.45 "Iowan Old Style", "Baskerville", Georgia, serif;
+      overflow-x: hidden;
+    }
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      opacity: .07;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    button, select, input { font: inherit; }
+    button, select { color: var(--ink); }
+    button { cursor: pointer; }
+
+    .shell { width: min(1500px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 36px; }
+    .masthead { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .eyebrow { color: var(--orange-light); font: 700 11px/1 "SFMono-Regular", Consolas, monospace; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: 8px 0 0; max-width: 760px; font-size: clamp(32px, 5vw, 64px); line-height: .95; font-weight: 500; letter-spacing: -.04em; }
+    .masthead-copy { margin: 14px 0 0; color: var(--muted); max-width: 620px; font-size: 16px; }
+    .status-chip { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: rgba(17, 24, 23, .6); white-space: nowrap; font: 12px "SFMono-Regular", Consolas, monospace; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 14px rgba(230, 199, 122, .8); }
+    .status-chip.ready .status-dot { background: var(--mint); box-shadow: 0 0 14px rgba(152, 197, 167, .8); }
+    .status-chip.error .status-dot { background: #ee735e; box-shadow: 0 0 14px rgba(238, 115, 94, .8); }
+
+    .workspace { display: grid; grid-template-columns: 265px minmax(460px, 1fr) 275px; min-height: 690px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: rgba(16, 22, 21, .62); box-shadow: 0 26px 80px rgba(0, 0, 0, .28); }
+    .rail, .inspector { background: rgba(24, 33, 30, .76); }
+    .rail { border-right: 1px solid var(--line); padding: 21px 16px; }
+    .inspector { border-left: 1px solid var(--line); padding: 21px 17px; }
+    .section-label { margin: 0 0 11px; color: var(--faint); font: 700 10px/1.1 "SFMono-Regular", Consolas, monospace; letter-spacing: .15em; text-transform: uppercase; }
+    .preset-list { display: grid; gap: 8px; }
+    .preset { width: 100%; padding: 12px 12px 13px; text-align: left; border: 1px solid transparent; border-radius: 11px; background: transparent; transition: .18s ease; }
+    .preset:hover { border-color: rgba(216, 120, 69, .35); background: rgba(216, 120, 69, .08); }
+    .preset.active { border-color: rgba(240, 161, 104, .66); background: linear-gradient(135deg, rgba(216, 120, 69, .19), rgba(216, 120, 69, .05)); }
+    .preset-name { display: block; color: var(--ink); font-size: 16px; }
+    .preset-meta { display: block; margin-top: 4px; color: var(--muted); font: 11px/1.35 "SFMono-Regular", Consolas, monospace; }
+    .preset-mark { float: right; color: var(--orange-light); font: 16px monospace; }
+    .rail-note { margin-top: 26px; padding-top: 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    .rail-note strong { color: var(--mint); font-weight: 500; }
+
+    .viewer { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; background: rgba(14, 20, 19, .7); }
+    .viewer-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .field { display: grid; gap: 4px; }
+    .field label { color: var(--faint); font: 10px "SFMono-Regular", Consolas, monospace; letter-spacing: .12em; text-transform: uppercase; }
+    select, .text-field { min-width: 145px; padding: 9px 30px 9px 10px; border: 1px solid var(--line); border-radius: 8px; outline: none; background: var(--panel-strong); }
+    select:focus, .text-field:focus { border-color: var(--orange); }
+    .bank-field { margin-left: auto; }
+    .stage-wrap { position: relative; min-height: 450px; padding: 18px; overflow: hidden; }
+    .stage {
+      position: absolute;
+      inset: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(244, 239, 223, .1);
+      border-radius: 14px;
+      background:
+        linear-gradient(rgba(244, 239, 223, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(244, 239, 223, .045) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 55%, rgba(152, 197, 167, .12), transparent 44%),
+        #17211f;
+      background-size: 36px 36px, 36px 36px, auto, auto;
+    }
+    .stage::before, .stage::after { position: absolute; content: ""; pointer-events: none; }
+    .stage::before { inset: 50% 0 auto; border-top: 1px dashed rgba(244, 239, 223, .13); }
+    .stage::after { inset: 0 auto 0 50%; border-left: 1px dashed rgba(244, 239, 223, .13); }
+    .scene { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform: scale(var(--scene-scale)); transform-origin: center; transition: left .18s ease, top .18s ease, transform .18s ease; }
+    .scene img { position: absolute; display: none; max-width: none; pointer-events: none; user-select: none; }
+    .stage-caption { position: absolute; left: 18px; right: 18px; bottom: 15px; display: flex; justify-content: space-between; gap: 12px; color: rgba(244, 239, 223, .45); font: 10px "SFMono-Regular", Consolas, monospace; letter-spacing: .04em; pointer-events: none; }
+    .empty-state { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: var(--muted); }
+    .empty-state strong { display: block; margin-bottom: 7px; color: var(--ink); font-size: 20px; font-weight: 500; }
+    .empty-state[hidden] { display: none; }
+    .timeline { display: grid; gap: 10px; padding: 14px 18px 16px; border-top: 1px solid var(--line); }
+    .transport { display: flex; align-items: center; gap: 8px; }
+    .transport button, .small-button { padding: 8px 11px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255, 255, 255, .035); transition: .18s ease; }
+    .transport button:hover, .small-button:hover { border-color: var(--orange); background: rgba(216, 120, 69, .14); }
+    .transport .primary { border-color: var(--orange); color: #201914; background: var(--orange-light); }
+    .transport .primary:hover { background: #ffc18a; }
+    input[type="range"] { width: 100%; accent-color: var(--orange); cursor: pointer; }
+    .frame-readout { min-width: 112px; margin-left: auto; color: var(--muted); text-align: right; font: 12px "SFMono-Regular", Consolas, monospace; }
+    .timeline-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+    .speed { display: flex; align-items: center; gap: 7px; color: var(--muted); font: 11px "SFMono-Regular", Consolas, monospace; }
+    .speed input { width: 90px; }
+
+    .inspector h2 { margin: 0 0 17px; font-size: 22px; font-weight: 500; letter-spacing: -.02em; }
+    .inspector-card { padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255, 255, 255, .025); }
+    .stat { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(244, 239, 223, .08); }
+    .stat:last-child { border-bottom: 0; }
+    .stat span { color: var(--muted); }
+    .stat strong { color: var(--ink); font: 13px "SFMono-Regular", Consolas, monospace; text-align: right; overflow-wrap: anywhere; }
+    .clip-notes { margin-top: 22px; }
+    .clip-notes ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+    .clip-notes li { display: flex; gap: 8px; color: var(--muted); font-size: 13px; }
+    .clip-notes li::before { content: "↳"; color: var(--orange-light); }
+    .hint { margin-top: 22px; padding: 12px; border-left: 2px solid var(--mint); color: var(--muted); background: rgba(152, 197, 167, .06); font-size: 12px; }
+    .error { color: #f08d78; }
+    @media (max-width: 1120px) {
+      .workspace { grid-template-columns: 220px minmax(400px, 1fr); }
+      .inspector { grid-column: 1 / -1; border-top: 1px solid var(--line); border-left: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+      .inspector h2, .inspector > .section-label { grid-column: 1 / -1; }
+      .clip-notes, .hint { margin-top: 0; }
+    }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 680px); padding-top: 18px; }
+      .masthead { align-items: start; flex-direction: column; }
+      .workspace { display: block; }
+      .rail, .inspector { border: 0; }
+      .rail { border-bottom: 1px solid var(--line); }
+      .preset-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .preset-meta { font-size: 10px; }
+      .viewer-toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+      .bank-field { margin-left: 0; }
+      .stage-wrap { min-height: 390px; }
+      .inspector { display: block; }
+      .inspector-card { margin-bottom: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <div class="eyebrow">Offline asset lab · yf-starve</div>
+        <h1>Beefalo<br>Motion Lab</h1>
+        <p class="masthead-copy">把 bank 里的动作直接放到骑乘组合体上逐帧检查。页面会自动载入当前工作区的参考 build，适合挑选可以接入 StateGraph 的动作。</p>
+      </div>
+      <div id="status" class="status-chip"><span class="status-dot"></span><span id="statusText">正在载入默认预览</span></div>
+    </header>
+
+    <section class="workspace" aria-label="动画浏览器">
+      <aside class="rail">
+        <p class="section-label">可视预览</p>
+        <div id="presetList" class="preset-list"></div>
+        <div class="rail-note">
+          <strong>提示</strong><br>
+          参考 bank 的分片目录仍可用 `catalog_anim_banks.py` 查询。这里优先展示已经具备 build、贴图和动画的组合。
+        </div>
+      </aside>
+
+      <section class="viewer">
+        <div class="viewer-toolbar">
+          <div class="field">
+            <label for="bankSelect">Bank</label>
+            <select id="bankSelect" aria-label="选择动画 bank"></select>
+          </div>
+          <div class="field">
+            <label for="animSelect">Animation</label>
+            <select id="animSelect" aria-label="选择动画"></select>
+          </div>
+          <div class="field bank-field">
+            <label for="scaleRange">Scale</label>
+          <input id="scaleRange" type="range" min="0.2" max="1.7" step="0.05" value="1" aria-label="预览缩放">
+          </div>
+        </div>
+
+        <div class="stage-wrap">
+          <div id="stage" class="stage">
+            <div id="scene" class="scene"></div>
+            <div id="emptyState" class="empty-state" hidden><div><strong>当前动作没有可见图层</strong><span>请检查 build 和贴图是否匹配。</span></div></div>
+            <div class="stage-caption"><span id="sourceCaption">—</span><span>滚轮：逐帧 · 空格：播放/暂停 · ← →：前后帧</span></div>
+          </div>
+        </div>
+
+        <div class="timeline">
+          <div class="transport">
+            <button id="prevButton" type="button" title="上一帧">←</button>
+            <button id="playButton" class="primary" type="button">播放</button>
+            <button id="nextButton" type="button" title="下一帧">→</button>
+            <div id="frameReadout" class="frame-readout">帧 0 / 0</div>
+          </div>
+          <div class="timeline-row">
+            <input id="frameRange" type="range" min="0" max="0" value="0" aria-label="动画帧">
+            <label class="speed">速度 <input id="speedRange" type="range" min="0.25" max="2" step="0.25" value="1"><span id="speedText">1×</span></label>
+          </div>
+        </div>
+      </section>
+
+      <aside class="inspector">
+        <h2>动作检查</h2>
+        <div class="inspector-card">
+          <div class="stat"><span>bank</span><strong id="bankValue">—</strong></div>
+          <div class="stat"><span>动作</span><strong id="animValue">—</strong></div>
+          <div class="stat"><span>帧率</span><strong id="fpsValue">—</strong></div>
+          <div class="stat"><span>总帧数</span><strong id="framesValue">—</strong></div>
+          <div class="stat"><span>阶段</span><strong id="phaseValue">—</strong></div>
+        </div>
+        <div class="clip-notes">
+          <p class="section-label">实现提示</p>
+          <ul id="clipNotes"></ul>
+        </div>
+        <div class="hint">方向后缀保持独立显示；`pre → loop → pst` 可以直接映射成 StateGraph 的准备、循环和收尾状态。</div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    // The page is served from the repository root by tools/serve_animation_lab.py.
+    const PRESETS = [
+      {
+        id: "mount",
+        label: "骑手装具",
+        meta: "wilsonbeefalo · 2 clips",
+        anim: "/temp/animation-lab/player_mount_shoes/anim.json",
+        build: "/temp/animation-lab/player_mount_shoes/build.json",
+        images: "/temp/animation-lab/player_mount_shoes/images/",
+        defaultBank: "wilsonbeefalo",
+        defaultAnim: "mount_shoes",
+        notes: ["完整骑手与 beefalo build", "适合检查上下牛的组合姿态", "来源：BetterBeefalo 参考资源"]
+      },
+      {
+        id: "charge",
+        label: "蓄力冲撞",
+        meta: "wilsonbeefalo · 24 clips",
+        anim: "/temp/animation-lab/wilsonbeefalo/anim.json",
+        build: "/temp/animation-lab/player_mount_shoes/build.json",
+        images: "/temp/animation-lab/player_mount_shoes/images/",
+        defaultBank: "wilsonbeefalo",
+        defaultAnim: "lancecharge_pre_side",
+        notes: ["目标 bank 的自定义 lancecharge 片段", "优先串联 pre → loop → pst", "当前 build 是骑手装具参考 build"]
+      },
+      {
+        id: "bellow",
+        label: "牛动作参考",
+        meta: "wilsongrassbeef_15 · 23 clips",
+        anim: "/temp/animation-lab/banks/wilsongrassbeef_15/anim.json",
+        build: "/temp/animation-lab/bellow_preview/build.json",
+        images: "/temp/animation-lab/bellow_preview/images/",
+        defaultBank: "wilsongrassbeef",
+        defaultAnim: "bellow",
+        notes: ["包含 bellow、atk、graze、alert、taunt 等动作", "当前使用 gator build 作为独立预览", "最终要换成目标 beefalo build"]
+      },
+      {
+        id: "mount-supply",
+        label: "骑乘与补给",
+        meta: "wilsongrassbeef_16 · 15 clips",
+        anim: "/temp/animation-lab/banks/wilsongrassbeef_16/anim.json",
+        build: "/temp/animation-lab/bellow_preview/build.json",
+        images: "/temp/animation-lab/bellow_preview/images/",
+        defaultBank: "wilsongrassbeef",
+        defaultAnim: "mount",
+        notes: ["包含 mount、dismount、buck、eat 等动作", "适合检查骑乘反馈和补给机制", "当前 build 仍是参考 gator 外观"]
+      },
+      {
+        id: "movement",
+        label: "移动片段",
+        meta: "wilsongrassbeef_6 · 18 clips",
+        anim: "/temp/animation-lab/banks/wilsongrassbeef_6/anim.json",
+        build: "/temp/animation-lab/bellow_preview/build.json",
+        images: "/temp/animation-lab/bellow_preview/images/",
+        defaultBank: "wilsongrassbeef",
+        defaultAnim: "run_loop_side",
+        notes: ["包含 run_pre、run_loop、run_pst 方向版本", "适合冲撞和犁地的动作筛选", "当前 build 仍是参考 gator 外观"]
+      }
+    ];
+
+    const state = {
+      preset: null,
+      animData: null,
+      buildData: null,
+      bank: "",
+      animation: "",
+      frame: 0,
+      playing: false,
+      timer: null,
+      speed: 1,
+      scale: 1,
+      origin: { x: 0, y: 0 },
+      autoFit: true,
+      imageById: new Map(),
+      symbolByName: new Map()
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const status = $("status");
+    const statusText = $("statusText");
+
+    function setStatus(message, kind = "") {
+      status.className = `status-chip ${kind}`;
+      statusText.textContent = message;
+    }
+
+    function normaliseSymbols(build) {
+      state.symbolByName = new Map();
+      for (const [name, frames] of Object.entries(build.Symbol || {})) {
+        state.symbolByName.set(name.toLowerCase(), frames);
+      }
+    }
+
+    function currentClip() {
+      return state.animData?.banks?.[state.bank]?.[state.animation] || null;
+    }
+
+    function buildFrame(name, frame) {
+      const frames = state.symbolByName.get(name.toLowerCase());
+      if (!frames) return null;
+      return frames.find((item) => frame >= item.framenum && frame < item.framenum + (item.duration || 1)) || null;
+    }
+
+    function imagePath(name, frame) {
+      return `${state.preset.images}${encodeURIComponent(name)}/${encodeURIComponent(name)}-${frame}.png`;
+    }
+
+    function elementId(name, frame, ordinal) {
+      return `${name}::${frame}::${ordinal}`;
+    }
+
+    function prepareImages(clip) {
+      const scene = $("scene");
+      scene.replaceChildren();
+      state.imageById = new Map();
+      const ordinals = new Map();
+      for (const frame of clip.frames) {
+        for (const item of frame.elements || []) {
+          const key = `${item.name}::${item.frame}`;
+          const ordinal = ordinals.get(key) || 0;
+          ordinals.set(key, ordinal + 1);
+          const id = elementId(item.name, item.frame, ordinal);
+          if (state.imageById.has(id)) continue;
+          const info = buildFrame(item.name, item.frame);
+          // An animation bank can reference optional symbols that the selected
+          // build does not contain. Skipping them keeps a compatible preview
+          // quiet instead of issuing a stream of 404 image requests.
+          if (!info) continue;
+          const img = document.createElement("img");
+          img.alt = `${item.name} ${item.frame}`;
+          img.src = imagePath(item.name, item.frame);
+          img.addEventListener("error", () => img.dataset.missing = "true", { once: true });
+          const px = info.w / 2 - info.x;
+          const py = info.h / 2 - info.y;
+          img.style.left = `${-px}px`;
+          img.style.top = `${-py}px`;
+          img.style.transformOrigin = `${px}px ${py}px`;
+          scene.appendChild(img);
+          state.imageById.set(id, img);
+        }
+      }
+    }
+
+    function renderFrame(frameIndex) {
+      const clip = currentClip();
+      if (!clip) return;
+      state.frame = ((frameIndex % clip.numframes) + clip.numframes) % clip.numframes;
+      for (const img of state.imageById.values()) img.style.display = "none";
+      const ordinals = new Map();
+      for (const item of clip.frames[state.frame].elements || []) {
+        const key = `${item.name}::${item.frame}`;
+        const ordinal = ordinals.get(key) || 0;
+        ordinals.set(key, ordinal + 1);
+        const img = state.imageById.get(elementId(item.name, item.frame, ordinal));
+        if (!img) continue;
+        img.style.transform = `matrix(${item.m_a}, ${item.m_b}, ${item.m_c}, ${item.m_d}, ${item.m_tx}, ${item.m_ty})`;
+        img.style.zIndex = String(1000 - (item.z_index || 0));
+        img.style.display = "block";
+      }
+      $("frameRange").value = String(state.frame);
+      $("frameReadout").textContent = `帧 ${state.frame + 1} / ${clip.numframes}`;
+      $("emptyState").hidden = [...state.imageById.values()].some((img) => img.style.display === "block");
+    }
+
+    function applyView() {
+      const scene = $("scene");
+      scene.style.left = `${state.origin.x}px`;
+      scene.style.top = `${state.origin.y}px`;
+      scene.style.transform = `scale(${state.scale})`;
+      $("scaleRange").value = String(state.scale);
+    }
+
+    async function fitToStage() {
+      const clip = currentClip();
+      if (!clip || !state.autoFit) return;
+      const stage = $("stage").getBoundingClientRect();
+      state.origin = { x: stage.width / 2, y: stage.height / 2 };
+      state.scale = 1;
+      applyView();
+      await Promise.all([...state.imageById.values()].map((img) => img.decode ? img.decode().catch(() => undefined) : Promise.resolve()));
+      const visible = [...state.imageById.values()]
+        .filter((img) => img.style.display === "block" && img.naturalWidth > 0)
+        .map((img) => img.getBoundingClientRect());
+      if (!visible.length) return;
+      const left = Math.min(...visible.map((rect) => rect.left));
+      const top = Math.min(...visible.map((rect) => rect.top));
+      const right = Math.max(...visible.map((rect) => rect.right));
+      const bottom = Math.max(...visible.map((rect) => rect.bottom));
+      const contentWidth = Math.max(1, right - left);
+      const contentHeight = Math.max(1, bottom - top);
+      state.scale = Math.max(.2, Math.min(1.7, Math.min((stage.width - 54) / contentWidth, (stage.height - 54) / contentHeight)));
+      const stageCenter = { x: stage.left + stage.width / 2, y: stage.top + stage.height / 2 };
+      const contentCenter = { x: (left + right) / 2, y: (top + bottom) / 2 };
+      state.origin = {
+        x: stage.width / 2 - (contentCenter.x - stageCenter.x) * state.scale,
+        y: stage.height / 2 - (contentCenter.y - stageCenter.y) * state.scale
+      };
+      applyView();
+    }
+
+    function phaseName(name) {
+      if (name.includes("_pre")) return "准备";
+      if (name.includes("_loop")) return "循环";
+      if (name.includes("_pst")) return "收尾";
+      if (name.includes("bellow")) return "一次性演出";
+      return "动作片段";
+    }
+
+    function updateInspector() {
+      const clip = currentClip();
+      $("bankValue").textContent = state.bank || "—";
+      $("animValue").textContent = state.animation || "—";
+      $("fpsValue").textContent = clip ? `${clip.framerate} FPS` : "—";
+      $("framesValue").textContent = clip ? String(clip.numframes) : "—";
+      $("phaseValue").textContent = clip ? phaseName(state.animation) : "—";
+      $("sourceCaption").textContent = state.preset ? `${state.preset.label} / ${state.animation}` : "—";
+      const notes = $("clipNotes");
+      notes.replaceChildren();
+      for (const note of state.preset?.notes || []) {
+        const li = document.createElement("li");
+        li.textContent = note;
+        notes.appendChild(li);
+      }
+    }
+
+    function populateBanks() {
+      const select = $("bankSelect");
+      select.replaceChildren();
+      for (const bank of Object.keys(state.animData.banks || {})) {
+        const option = new Option(bank, bank);
+        select.appendChild(option);
+      }
+      select.value = state.bank;
+      populateAnimations();
+    }
+
+    function populateAnimations() {
+      const select = $("animSelect");
+      select.replaceChildren();
+      for (const name of Object.keys(state.animData.banks?.[state.bank] || {})) {
+        const option = new Option(name, name);
+        select.appendChild(option);
+      }
+      if (!state.animData.banks?.[state.bank]?.[state.animation]) {
+        state.animation = Object.keys(state.animData.banks?.[state.bank] || {})[0] || "";
+      }
+      select.value = state.animation;
+      loadClip();
+    }
+
+    async function loadClip() {
+      stop();
+      const clip = currentClip();
+      if (!clip) return;
+      prepareImages(clip);
+      $("frameRange").max = String(Math.max(0, clip.numframes - 1));
+      renderFrame(0);
+      await fitToStage();
+      updateInspector();
+      start();
+    }
+
+    function start() {
+      const clip = currentClip();
+      if (!clip || state.playing) return;
+      state.playing = true;
+      $("playButton").textContent = "暂停";
+      const tick = () => {
+        state.timer = window.setTimeout(() => {
+          renderFrame(state.frame + 1);
+          tick();
+        }, 1000 / clip.framerate / state.speed);
+      };
+      tick();
+    }
+
+    function stop() {
+      state.playing = false;
+      if (state.timer) window.clearTimeout(state.timer);
+      state.timer = null;
+      $("playButton").textContent = "播放";
+    }
+
+    function togglePlayback() { state.playing ? stop() : start(); }
+    function step(delta) { stop(); renderFrame(state.frame + delta); }
+
+    async function loadPreset(id) {
+      const preset = PRESETS.find((item) => item.id === id);
+      if (!preset) return;
+      stop();
+      state.preset = preset;
+      state.autoFit = true;
+      document.querySelectorAll(".preset").forEach((item) => item.classList.toggle("active", item.dataset.id === id));
+      setStatus(`载入 ${preset.label}`);
+      try {
+        const [animResponse, buildResponse] = await Promise.all([fetch(preset.anim), fetch(preset.build)]);
+        if (!animResponse.ok || !buildResponse.ok) throw new Error("找不到预览资源");
+        state.animData = await animResponse.json();
+        state.buildData = await buildResponse.json();
+        normaliseSymbols(state.buildData);
+        state.bank = preset.defaultBank;
+        state.animation = preset.defaultAnim;
+        populateBanks();
+        setStatus(`${preset.label} · 已就绪`, "ready");
+      } catch (error) {
+        state.animData = null;
+        state.buildData = null;
+        $("scene").replaceChildren();
+        $("emptyState").hidden = false;
+        setStatus(`载入失败：${error.message}`, "error");
+      }
+    }
+
+    function renderPresetList() {
+      const list = $("presetList");
+      for (const preset of PRESETS) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "preset";
+        button.dataset.id = preset.id;
+        button.innerHTML = `<span class="preset-mark">↗</span><span class="preset-name">${preset.label}</span><span class="preset-meta">${preset.meta}</span>`;
+        button.addEventListener("click", () => loadPreset(preset.id));
+        list.appendChild(button);
+      }
+    }
+
+    $("bankSelect").addEventListener("change", (event) => {
+      state.bank = event.target.value;
+      state.animation = "";
+      populateAnimations();
+    });
+    $("animSelect").addEventListener("change", (event) => { state.animation = event.target.value; loadClip(); });
+    $("playButton").addEventListener("click", togglePlayback);
+    $("prevButton").addEventListener("click", () => step(-1));
+    $("nextButton").addEventListener("click", () => step(1));
+    $("frameRange").addEventListener("input", (event) => { stop(); renderFrame(Number(event.target.value)); });
+    $("scaleRange").addEventListener("input", (event) => {
+      state.autoFit = false;
+      state.scale = Number(event.target.value);
+      applyView();
+    });
+    $("speedRange").addEventListener("input", (event) => {
+      state.speed = Number(event.target.value);
+      $("speedText").textContent = `${state.speed}×`;
+      if (state.playing) { stop(); start(); }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.target.matches("select, input")) return;
+      if (event.code === "Space") { event.preventDefault(); togglePlayback(); }
+      if (event.key === "ArrowLeft") step(-1);
+      if (event.key === "ArrowRight") step(1);
+    });
+    window.addEventListener("resize", () => { if (state.autoFit) fitToStage(); });
+
+    renderPresetList();
+    loadPreset("mount");
+  </script>
+</body>
+</html>
