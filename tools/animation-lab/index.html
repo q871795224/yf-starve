@@ -167,7 +167,7 @@
 
     <section class="workspace" aria-label="动画浏览器">
       <aside class="rail">
-        <p class="section-label">可视预览 · 5 组</p>
+        <p class="section-label">可视预览 · 6 组</p>
         <div id="presetList" class="preset-list"></div>
         <div class="rail-note">
           <strong>三层关系</strong><br>
@@ -244,6 +244,21 @@
   <script>
     // The page is served from the repository root by tools/serve_animation_lab.py.
     const PRESETS = [
+      {
+        id: "official-mount",
+        label: "官方骑乘动作",
+        meta: "331 clips",
+        appearanceId: "official-beefalo",
+        appearanceLabel: "官方 Beefalo / 骑手",
+        appearanceMeta: "wilsonbeefalo · Steam depot",
+        anim: "/temp/animation-lab/official-mount/anim.json",
+        build: "/temp/animation-lab/official-mount/build.json",
+        images: "/temp/animation-lab/official-mount/images/",
+        defaultBank: "wilsonbeefalo",
+        defaultAnim: "bellow",
+        buildLabel: "官方 Beefalo + 鞍具 / 组合骑手 build",
+        notes: ["player_mount*.zip 合并后的官方 wilsonbeefalo bank", "Beefalo 与 saddle_basic 使用官方资源", "骑手服装部件沿用已提取的组合 build，便于离线检查姿态"]
+      },
       {
         id: "mount",
         label: "骑手装具",
@@ -684,7 +699,7 @@
     window.addEventListener("resize", () => { if (state.autoFit) fitToStage(); });
 
     renderPresetList();
-    loadPreset("mount");
+    loadPreset("official-mount");
   </script>
 </body>
 </html>

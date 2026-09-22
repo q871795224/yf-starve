@@ -39,7 +39,7 @@ python3 tools/catalog_anim_banks.py --contains mount
 - 开源 [ktools](https://github.com/nsimplex/ktools) 的 `krane` 可以把 `anim.bin + build.bin` 转成 SCML。
 - [DSTmodutils](https://github.com/ZzzzzzzSkyward/DSTmodutils) 附带 JSON 转换脚本和 `html/index.html` 动画播放器。播放器需要 `anim.json`、`build.json` 和 PNG 贴图；缺少完整 build 或贴图时只能检查动作元数据，不能还原完整角色。
 
-这些工具都在 `temp/` 下临时使用，不进入模组发布包。当前参考模组里的 bank 是拆分追加的资源，`wilsonbeefalo.zip` 只含自定义 `lancecharge_*`；原版 `bellow` 所在的 bank 分片和完整 beefalo build 需要从测试机的 DST 安装目录补齐，不能用 gator 的 build 代替。
+这些工具都在 `temp/` 下临时使用，不进入模组发布包。当前参考模组里的 bank 是拆分追加的资源，`wilsonbeefalo.zip` 只含自定义 `lancecharge_*`。官方 Steam depot 的 `beefalo_*.zip`、`player_mount*.zip`、`saddle_basic.zip` 已放在本地 `temp/official-dst/`；浏览器里的“官方骑乘动作”使用这些官方动作、牛和鞍具资源，骑手服装部件仍沿用已提取的组合 build 来保证离线预览完整。
 
 本次离线验证已经跑通：`BetterBeefalo/anim/player_mount_shoes.zip` 的 build、贴图和 `wilsonbeefalo` 动作可以在 HTML 播放器里逐帧显示；`wilsongrassbeef_15.zip` 配合 `grass_gator_build.zip` 也能显示 `bellow` 的 51 帧姿态变化。第二个结果只证明动作资源和播放器链路有效，最终 beefalo 外观仍要使用 DST 安装目录里的匹配 build。
 
@@ -51,10 +51,11 @@ python3 tools/catalog_anim_banks.py --contains mount
 python3 tools/serve_animation_lab.py
 ```
 
-浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“骑手装具”预览。页面按三层关系组织资源：**外观 / Build → 动作资源集 → 具体动作 Clip**。当前有两个已经具备完整可视 build 的外观组和五个动作资源集：
+浏览器打开 <http://127.0.0.1:8765/tools/animation-lab/index.html>。页面会自动载入“官方骑乘动作”预览。页面按三层关系组织资源：**外观 / Build → 动作资源集 → 具体动作 Clip**。当前有三个外观组和六个动作资源集：
 
 | 外观 / 动作资源集 | 内容 | 重点动作 |
 | --- | --- | --- |
+| 官方 Beefalo / 骑手 → 官方骑乘动作 | Steam depot 的 `wilsonbeefalo`，331 个 Clip | `bellow`、`mount`、`dismount`、`heavy_mount`、`atk_*` |
 | 普通牛 / Beefalo → 骑手装具 | 完整 rider + beefalo build，2 个 Clip | `mount_shoes`、`dismount_shoes` |
 | 普通牛 / Beefalo → 蓄力冲撞 | `wilsonbeefalo`，24 个 Clip | `lancecharge_pre/loop/pst_*` |
 | 水草牛 / Grass Gator → 基础与战斗 | gator build，23 个 Clip | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |
