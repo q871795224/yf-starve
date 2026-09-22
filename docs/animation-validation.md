@@ -39,7 +39,7 @@ python3 tools/catalog_anim_banks.py --contains mount
 - 开源 [ktools](https://github.com/nsimplex/ktools) 的 `krane` 可以把 `anim.bin + build.bin` 转成 SCML。
 - [DSTmodutils](https://github.com/ZzzzzzzSkyward/DSTmodutils) 附带 JSON 转换脚本和 `html/index.html` 动画播放器。播放器需要 `anim.json`、`build.json` 和 PNG 贴图；缺少完整 build 或贴图时只能检查动作元数据，不能还原完整角色。
 
-这些工具都在 `temp/` 下临时使用，不进入模组发布包。当前参考模组里的 bank 是拆分追加的资源，`wilsonbeefalo.zip` 只含自定义 `lancecharge_*`。官方 Steam depot 的 `beefalo_*.zip`、`player_mount*.zip`、`saddle_basic.zip` 已放在本地 `temp/official-dst/`；浏览器里的“官方骑乘动作”使用这些官方动作、牛和鞍具资源，骑手服装部件仍沿用已提取的组合 build 来保证离线预览完整。
+这些工具都在 `temp/` 下临时使用，不进入模组发布包。当前参考模组里的 bank 是拆分追加的资源，`wilsonbeefalo.zip` 只含自定义 `lancecharge_*`。官方 Steam depot 的 `beefalo_*.zip`、`player_mount*.zip`、`saddle_basic.zip`、`player_lancejab.zip` 和 `swap_spear_lance.zip` 已放在本地 `temp/official-dst/`；浏览器里的“官方骑乘动作”使用这些官方动作、牛和鞍具资源，骑手服装部件仍沿用已提取的组合 build 来保证离线预览完整。
 
 本次离线验证已经跑通：`BetterBeefalo/anim/player_mount_shoes.zip` 的 build、贴图和 `wilsonbeefalo` 动作可以在 HTML 播放器里逐帧显示；`wilsongrassbeef_15.zip` 配合 `grass_gator_build.zip` 也能显示 `bellow` 的 51 帧姿态变化。第二个结果只证明动作资源和播放器链路有效，最终 beefalo 外观仍要使用 DST 安装目录里的匹配 build。
 
@@ -55,6 +55,20 @@ python3 tools/build_mounted_attack_preview.py
 
 它以 `atk_pre_side` / `atk_side` 作为完整场景，保留牛和骑手随牛攻击产生的整体移动；官方骑手手、手臂和武器图层也保留不动，只围绕官方武器手部锚点加入一段幅度受限的局部挥动。`player_atk_*` 与 `atk_*` 的空间根和骑手朝向不同，因此不把前者的绝对姿态硬贴到后者上。输出位于 `temp/animation-lab/mounted-attack-prototype/`，页面中的“自制同步攻击原型”会读取它。这个 JSON 只用于确认姿态和节奏，最终仍需在 Spriter / Mod Tools 中编译成游戏资源。
 
+针对“牛的动作幅度太大，骑手攻击看不清”的问题，另有一个独立的骑枪刺击原型：
+
+```bash
+python3 tools/build_mounted_lance_preview.py
+```
+
+它从 Steam depot 的 `swap_spear_lance.zip` 解出正式长枪贴图和 build，把官方 `atk_pre_side` / `atk_side` 作为牛的运动底稿，再在目标空间里做三件事：
+
+- 开头先放 6 帧 `idle_loop`，所以组合的第一帧是常态，不会一开始就进入 `atk_pre`；
+- 骑手围绕 `torso_pelvis` 做最高约 30° 的前倾，牛的顶撞仍沿用官方动作；
+- 把长枪放到 z=2，压到牛头的 z=3..9 之前，并在攻击前段沿前方伸出，保证武器轮廓可读。
+
+页面的“自制骑枪刺击原型”有“常态 → 准备 → 骑枪刺击”和“准备 → 骑枪刺击”两个组合。`player_lancejab` 的官方动作只用于参考刺击节奏，不能把它的绝对坐标直接复制到 `wilsonbeefalo`；生成结果仍是离线预览，输出位于 `temp/animation-lab/mounted-lance-prototype/`。
+
 项目内置了一个整理过布局的浏览器，不需要拖文件或手动填写贴图路径。启动服务：
 
 ```bash
@@ -67,6 +81,7 @@ python3 tools/serve_animation_lab.py
 | --- | --- | --- |
 | 官方 Beefalo / 骑手 → 官方骑乘动作 | Steam depot 的 `wilsonbeefalo`，331 个 Clip | `bellow`、`mount`、`dismount`、`heavy_mount`、`atk_*` |
 | 官方 Beefalo / 骑手 → 自制同步攻击原型 | 基于官方 `atk_*` 的 23 帧预览 | `yf_mounted_atk_pre_side`、`yf_mounted_atk_side` |
+| 官方 Beefalo / 骑手 → 自制骑枪刺击原型 | 官方牛攻击 + Steam `swap_spear_lance`，29 帧预览 | `yf_mounted_lancejab_idle_side`、`yf_mounted_lancejab_pre_side`、`yf_mounted_lancejab_side` |
 | 普通牛 / Beefalo → 骑手装具 | 完整 rider + beefalo build，2 个 Clip | `mount_shoes`、`dismount_shoes` |
 | 普通牛 / Beefalo → 蓄力冲撞 | `wilsonbeefalo`，24 个 Clip | `lancecharge_pre/loop/pst_*` |
 | 水草牛 / Grass Gator → 基础与战斗 | gator build，23 个 Clip | `bellow`、`atk_*`、`graze*`、`alert_*`、`taunt`、`shake` |

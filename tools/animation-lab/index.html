@@ -168,11 +168,11 @@
 
     <section class="workspace" aria-label="动画浏览器">
       <aside class="rail">
-        <p class="section-label">可视预览 · 6 组</p>
+        <p class="section-label">可视预览 · 7 组</p>
         <div id="presetList" class="preset-list"></div>
         <div class="rail-note">
           <strong>三层关系</strong><br>
-          外观 / Build → 动作资源集 → 具体动作 Clip。这里的 5 个按钮是动作资源集，不是 5 头牛；同一外观下可以有多个资源集。
+          外观 / Build → 动作资源集 → 具体动作 Clip。左侧按钮是动作资源集，不是不同的牛；同一外观下可以有多个资源集。
         </div>
       </aside>
 
@@ -308,6 +308,26 @@
           { id: "mounted-attack-side", label: "自制同步攻击 · 侧向", clips: ["yf_mounted_atk_pre_side", "yf_mounted_atk_side"] }
         ],
         notes: ["以官方 atk_pre_side / atk_side 作为完整场景和骑手位移基底", "保留官方手、手臂、武器图层，只在武器手臂的官方手部锚点上加入 20° 局部挥动", "不直接拼接 player_atk_*：两套动作的空间根和骑手朝向不同", "当前是离线原型，尚未编译为游戏 anim.bin"]
+      },
+      {
+        id: "mounted-lance-prototype",
+        label: "自制骑枪刺击原型",
+        meta: "29 frames · Steam lance",
+        appearanceId: "official-beefalo",
+        appearanceLabel: "官方 Beefalo / 骑手",
+        appearanceMeta: "wilsonbeefalo · Steam depot + 自制",
+        anim: "/temp/animation-lab/mounted-lance-prototype/anim.json",
+        build: "/temp/animation-lab/mounted-lance-prototype/build.json",
+        images: "/temp/animation-lab/mounted-lance-prototype/images/",
+        assetVersion: "mounted-lance-steam-20260922",
+        defaultBank: "wilsonbeefalo",
+        defaultAnim: "yf_mounted_lancejab_idle_side",
+        buildLabel: "官方 Beefalo + Steam swap_spear_lance",
+        sequences: [
+          { id: "mounted-lancejab-side", label: "常态 → 准备 → 骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_idle_side", "yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] },
+          { id: "mounted-lancejab-attack", label: "准备 → 骑枪刺击 · 侧向", clips: ["yf_mounted_lancejab_pre_side", "yf_mounted_lancejab_side"] }
+        ],
+        notes: ["前 6 帧使用官方 idle_loop，明确区分常态首帧和 atk_pre 的准备姿态", "骑手围绕 torso_pelvis 做最高约 30° 的目标空间前倾，牛仍使用官方 atk_* 动作", "武器取 Steam 的 swap_spear_lance build，放到 z=2，位于牛头 z=3..9 之前，并在冲刺阶段向前伸出", "player_lancejab 的官方节奏只作为素材参考；没有把它的绝对姿态直接粘到 wilsonbeefalo 上", "当前是离线原型，尚未编译为游戏 anim.bin"]
       },
       {
         id: "charge",
