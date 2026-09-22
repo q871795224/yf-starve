@@ -47,7 +47,7 @@ python3 tools/catalog_anim_banks.py --contains mount
 python3 tools/build_mounted_lance_asset.py
 ```
 
-命令把预览 JSON 中的 3 个 `yf_mounted_lancejab_*` 动作编译为 `mod/anim/yf_mounted_lance.zip`，并复制官方的
+命令把预览 JSON 中的 3 个 `yf_mounted_lancejab_*` 动作编译为 `mod/bank/yf_mounted_lance.zip`，并复制官方的
 `swap_spear_lance.zip` 到 `mod/anim/`。模组通过 `Asset("ANIM", ...)` 加载这两个追加资源；它不需要把整套官方
 `wilsonbeefalo` bank 重复打包。游戏内动作仍由骑手的 `wilson` / `wilson_client` 状态图触发。
 

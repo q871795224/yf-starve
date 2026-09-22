@@ -1,7 +1,7 @@
 -- DST mod entry point.
 
 Assets = {
-    Asset("ANIM", "anim/yf_mounted_lance.zip"),
+    Asset("ANIM", "bank/yf_mounted_lance.zip"),
     Asset("ANIM", "anim/swap_spear_lance.zip"),
 }
 

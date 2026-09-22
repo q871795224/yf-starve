@@ -37,7 +37,7 @@ speed, animation transitions, hunger cost, and multiplayer behavior in-game befo
 Mounted lance is a fifth standalone prototype. The configurable key (default B) is available while riding a
 beefalo and plays a custom 23-frame `wilsonbeefalo` sequence: the rider leans with the vanilla beefalo attack,
 the lance travels forward and follows the upward thrust, and the original grip hands stay in front of the weapon.
-The resources are `anim/yf_mounted_lance.zip` (three added clips) and the small official `swap_spear_lance` build.
+The resources are `bank/yf_mounted_lance.zip` (three added clips) and the small official `swap_spear_lance` build.
 This first game pass is visual only: it intentionally does not call `combat:DoAttack`, so we can compare the
 mounted timing and layering without adding a second hit to the vanilla beefalo attack. The game resource uses
 the base animation names (`yf_mounted_lancejab_pre` and `yf_mounted_lancejab`) so DST can resolve its facing

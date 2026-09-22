@@ -24,7 +24,7 @@ DEFAULT_SPEAR_ZIP = (
     ROOT
     / "temp/official-dst/dontstarve_steam.app/Contents/data/anim/swap_spear_lance.zip"
 )
-DEFAULT_ANIM_OUTPUT = ROOT / "mod/anim/yf_mounted_lance.zip"
+DEFAULT_ANIM_OUTPUT = ROOT / "mod/bank/yf_mounted_lance.zip"
 DEFAULT_SPEAR_OUTPUT = ROOT / "mod/anim/swap_spear_lance.zip"
 ANIM_NAMES = (
     "yf_mounted_lancejab_idle_side",
