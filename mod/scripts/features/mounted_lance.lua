@@ -49,7 +49,11 @@ local function PlayBeefaloAttackAnimation(beefalo)
 end
 
 local function FinishLance(inst)
-    if inst.sg ~= nil and inst.sg:HasStateTag("yf_mounted_lance") then
+    -- `animover` is also emitted when the queued pre clip hands off to the
+    -- attack clip. Only leave the state after the complete queue is done.
+    if inst.sg ~= nil
+        and inst.sg:HasStateTag("yf_mounted_lance")
+        and inst.AnimState:AnimDone() then
         inst.AnimState:ClearOverrideSymbol("swap_spear_lance")
         inst.sg:GoToState("idle")
     end
